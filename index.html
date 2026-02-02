@@ -456,6 +456,14 @@
                 justify-content: center;
             }
         }
+        
+        /* DEBUG - Mostrar timestamp de criação */
+        .debug-timestamp {
+            font-size: 10px;
+            color: #999;
+            margin-top: 5px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -779,18 +787,26 @@
         }
 
         // ============================================
-        // ATIVIDADES - CRUD
+        // ATIVIDADES - CRUD (CORRIGIDO PARA ORDEM CRONOLÓGICA)
         // ============================================
         function loadActivities() {
             const activitiesRef = database.ref('activities');
             
-            activitiesRef.on('value', (snapshot) => {
+            // Ordenar pelo timestamp de criação (do mais antigo para o mais novo)
+            activitiesRef.orderByChild('createdAtTimestamp').on('value', (snapshot) => {
                 activities = [];
                 snapshot.forEach((childSnapshot) => {
                     activities.push({
                         id: childSnapshot.key,
                         ...childSnapshot.val()
                     });
+                });
+                
+                // Garantir ordenação dupla (Firebase + JavaScript)
+                activities.sort((a, b) => {
+                    const timeA = a.createdAtTimestamp || 0;
+                    const timeB = b.createdAtTimestamp || 0;
+                    return timeA - timeB; // Ordem crescente = mais antigo primeiro
                 });
                 
                 loadActivitiesToUI();
@@ -812,10 +828,8 @@
                 return;
             }
 
-            // Ordenar por data (mais antiga primeiro) - ALTERAÇÃO FEITA AQUI!
-            activities.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
-
-            list.innerHTML = activities.map(act => {
+            // RENDERIZAR NA ORDEM CORRETA (índice 0 = primeiro item = topo da lista)
+            list.innerHTML = activities.map((act, index) => {
                 const priorityClass = {
                     'alta': 'priority-alta',
                     'media': 'priority-media',
@@ -850,7 +864,13 @@
                     'outros': 'Outros'
                 }[act.section || 'outros'];
 
-                const createdAt = act.createdAt ? new Date(act.createdAt).toLocaleDateString('pt-BR') : 'N/A';
+                const createdAt = act.createdAt ? new Date(parseInt(act.createdAtTimestamp)).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : 'N/A';
                 const whenDate = act.when ? new Date(act.when).toLocaleDateString('pt-BR') : '-';
 
                 return `
@@ -874,6 +894,7 @@
                             ${act.howMuch ? `<div><strong>💰 How Much:</strong> ${act.howMuch}</div>` : ''}
                         </div>
                         ` : ''}
+                        <div class="debug-timestamp">#${index + 1} • Timestamp: ${act.createdAtTimestamp}</div>
                         <div class="activity-actions">
                             <button class="btn btn-warning" onclick="editActivity('${act.id}')">✏️ Editar</button>
                             <button class="btn btn-danger" onclick="deleteActivity('${act.id}')">🗑️ Excluir</button>
@@ -909,6 +930,9 @@
         }
 
         function addActivity() {
+            // USAR TIMESTAMP NUMÉRICO PARA ORDENAÇÃO PRECISA
+            const timestamp = Date.now();
+            
             const activity = {
                 what: document.getElementById('what').value,
                 why: document.getElementById('why').value,
@@ -920,7 +944,8 @@
                 priority: document.getElementById('priority').value,
                 status: document.getElementById('status').value,
                 section: document.getElementById('section').value,
-                createdAt: new Date().toISOString(),
+                createdAt: new Date(timestamp).toISOString(),
+                createdAtTimestamp: timestamp, // ← CHAVE PARA ORDENAÇÃO
                 createdBy: currentUser.email
             };
 
@@ -973,7 +998,8 @@
                 priority: document.getElementById('priority').value,
                 status: document.getElementById('status').value,
                 section: document.getElementById('section').value,
-                updatedAt: new Date().toISOString()
+                updatedAt: new Date().toISOString(),
+                updatedAtTimestamp: Date.now()
             };
 
             const activityRef = database.ref('activities/' + id);
@@ -1241,8 +1267,12 @@
                             
                             // Limpar dados antigos
                             activitiesRef.remove().then(() => {
-                                // Adicionar novos dados
+                                // Adicionar novos dados com timestamp correto
                                 const promises = data.map(activity => {
+                                    // Garantir que todas as atividades tenham timestamp
+                                    if (!activity.createdAtTimestamp) {
+                                        activity.createdAtTimestamp = Date.now();
+                                    }
                                     return activitiesRef.push(activity);
                                 });
                                 
