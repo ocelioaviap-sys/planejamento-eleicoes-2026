@@ -1,8 +1,1367 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head><meta charset="utf-8"><title>Site no ar</title></head>
-  <body>
-    <h1>Seu site do GitHub Pages está no ar ✅</h1>
-    <p>Agora podemos substituir por sua página 5W2H.</p>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5W2H - Planejamento Eleições 2026</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .status-bar {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .status-item {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .status-item h3 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .status-item p {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .progress-0 { background: #e9ecef; }
+        .progress-25 { background: #ffc107; }
+        .progress-50 { background: #28a745; color: white; }
+        .progress-75 { background: #17a2b8; color: white; }
+        .progress-100 { background: #007bff; color: white; }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+
+        .content-area {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            align-self: start;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .activity-list {
+            margin-top: 30px;
+        }
+
+        .activity-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #007bff;
+            position: relative;
+        }
+
+        .activity-card.status-concluido {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .activity-card.status-andamento {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .activity-card.status-pendente {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .activity-title {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .activity-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 15px;
+        }
+
+        .activity-actions button {
+            padding: 8px 15px;
+            font-size: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .priority-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .priority-alta {
+            background: #dc3545;
+            color: white;
+        }
+
+        .priority-media {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .priority-baixa {
+            background: #28a745;
+            color: white;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .chart-placeholder {
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-style: italic;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .gantt-container {
+            margin-top: 20px;
+            overflow-x: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .gantt-row {
+            display: flex;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .gantt-bar {
+            height: 25px;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            border-radius: 4px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: translateX(400px);
+            transition: transform 0.3s;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: #28a745;
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        .notification.info {
+            background: #17a2b8;
+        }
+
+        .auth-section {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            text-align: center;
+            max-width: 600px;
+            margin: 40px auto;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+            max-width: 400px;
+            margin: 30px auto 0;
+        }
+
+        .auth-form input {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .auth-form button {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .auth-form .btn-login {
+            background: #007bff;
+            color: white;
+        }
+
+        .auth-form .btn-register {
+            background: #28a745;
+            color: white;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .online-users {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .online-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .online-user:hover {
+            background: #e9ecef;
+        }
+
+        .online-dot {
+            width: 12px;
+            height: 12px;
+            background: #28a745;
+            border-radius: 50%;
+            display: inline-block;
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+        }
+
+        .offline-dot {
+            width: 12px;
+            height: 12px;
+            background: #dc3545;
+            border-radius: 50%;
+            display: inline-block;
+            border: 2px solid white;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .status-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>🗳️ 5W2H - Planejamento Eleições 2026</h1>
+                <p class="subtitle">Sistema Integrado de Planejamento e Controle de Atividades Eleitorais</p>
+            </div>
+            <div style="text-align: right;">
+                <div class="user-info" id="user-info" style="display: none;">
+                    <!-- Info do usuário será inserida aqui -->
+                </div>
+                <div class="progress-bar" style="font-size: 24px; font-weight: bold; color: #007bff;">0% concluído</div>
+                <div style="margin-top: 5px; display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px;">
+                    <span>📋 Planejamento</span>
+                    <span>📊 Dashboard</span>
+                    <span>📈 Relatórios</span>
+                    <span>📅 Timeline</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tela de Login -->
+        <div class="auth-section" id="auth-section">
+            <h2 style="color: #333; margin-bottom: 10px;">🔐 Acesso ao Sistema 5W2H</h2>
+            <p style="color: #666; margin-bottom: 30px;">Faça login para colaborar com sua equipe</p>
+            
+            <div class="auth-form">
+                <input type="email" id="email" placeholder="📧 Email" autocomplete="email">
+                <input type="password" id="password" placeholder="🔒 Senha" autocomplete="current-password">
+                <button class="btn-login" onclick="login()">Entrar</button>
+                <button class="btn-register" onclick="register()">Registrar Nova Conta</button>
+            </div>
+
+            <div class="online-users">
+                <h4 style="margin-bottom: 10px; color: #333;">👥 Usuários Online</h4>
+                <div id="users-list" style="text-align: left;">Carregando...</div>
+            </div>
+        </div>
+
+        <!-- Dashboard Principal (escondido inicialmente) -->
+        <div class="status-bar" id="status-bar" style="display: none;">
+            <div class="status-item">
+                <h3 id="total-atividades">0</h3>
+                <p>Total de Atividades</p>
+            </div>
+            <div class="status-item">
+                <h3 id="concluidas">0</h3>
+                <p>Atividades Concluídas</p>
+            </div>
+            <div class="status-item">
+                <h3 id="andamento">0</h3>
+                <p>Em Andamento</p>
+            </div>
+            <div class="status-item">
+                <h3 id="pendentes">0</h3>
+                <p>Pendentes</p>
+            </div>
+        </div>
+
+        <div class="main-content" id="main-content" style="display: none;">
+            <div class="content-area">
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="showAddForm()">
+                        <span>➕</span> Nova Atividade
+                    </button>
+                    <button class="btn btn-success" onclick="exportBackup()">
+                        <span>💾</span> Backup
+                    </button>
+                    <button class="btn btn-warning" onclick="importBackup()">
+                        <span>📤</span> Restaurar
+                    </button>
+                    <button class="btn btn-info" onclick="generateCharts()">
+                        <span>📊</span> Atualizar Gráficos
+                    </button>
+                    <button class="btn btn-danger" onclick="logout()">
+                        <span>🚪</span> Sair
+                    </button>
+                </div>
+
+                <!-- Formulário de Cadastro -->
+                <div id="add-form" style="display: none; margin-top: 20px; padding: 25px; background: #f8f9fa; border-radius: 8px; border: 2px solid #007bff;">
+                    <h3 style="margin-bottom: 20px; color: #333;">📝 Adicionar Nova Atividade 5W2H</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                        <div class="form-group">
+                            <label>What (O quê?) *</label>
+                            <input type="text" id="what" placeholder="Descreva a atividade">
+                        </div>
+                        <div class="form-group">
+                            <label>Why (Por quê?)</label>
+                            <textarea id="why" placeholder="Objetivo/Motivo"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Where (Onde?)</label>
+                            <input type="text" id="where" placeholder="Local">
+                        </div>
+                        <div class="form-group">
+                            <label>When (Quando?)</label>
+                            <input type="date" id="when">
+                        </div>
+                        <div class="form-group">
+                            <label>Who (Quem?)</label>
+                            <input type="text" id="who" placeholder="Responsável">
+                        </div>
+                        <div class="form-group">
+                            <label>How (Como?)</label>
+                            <textarea id="how" placeholder="Metodologia/Procedimento"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>How Much (Quanto?)</label>
+                            <input type="text" id="how-much" placeholder="Custo/Recursos">
+                        </div>
+                        <div class="form-group">
+                            <label>Prioridade</label>
+                            <select id="priority">
+                                <option value="baixa">Baixa</option>
+                                <option value="media" selected>Média</option>
+                                <option value="alta">Alta</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="status">
+                                <option value="pendente">Pendente</option>
+                                <option value="andamento">Em Andamento</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Seção/Setor</label>
+                            <select id="section">
+                                <option value="planejamento">Planejamento</option>
+                                <option value="logistica">Logística</option>
+                                <option value="comunicacao">Comunicação</option>
+                                <option value="juridico">Jurídico</option>
+                                <option value="ti">TI / Tecnologia</option>
+                                <option value="financeiro">Financeiro</option>
+                                <option value="outros">Outros</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="margin-top: 25px; display: flex; gap: 15px; justify-content: center;">
+                        <button class="btn btn-success" style="padding: 12px 30px;" onclick="saveActivity()">✅ Salvar Atividade</button>
+                        <button class="btn btn-danger" style="padding: 12px 30px;" onclick="hideAddForm()">❌ Cancelar</button>
+                    </div>
+                </div>
+
+                <!-- Lista de Atividades -->
+                <div class="activity-list" id="activity-list">
+                    <p style="text-align: center; color: #999; padding: 60px 0; font-size: 16px;">
+                        📋 Nenhuma atividade cadastrada ainda.<br>
+                        <span style="display: block; margin-top: 10px; font-size: 14px;">Clique em "Nova Atividade" para começar.</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Sidebar com Gráficos -->
+            <div class="sidebar">
+                <h3 style="margin-bottom: 20px; color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px;">📊 Dashboard</h3>
+                
+                <div class="chart-container">
+                    <h4 style="margin-bottom: 12px; color: #333;">📈 Distribuição por Status</h4>
+                    <div class="chart-placeholder" id="chart-status">
+                        Adicione atividades para ver os gráficos
+                    </div>
+                </div>
+
+                <div class="chart-container" style="margin-top: 15px;">
+                    <h4 style="margin-bottom: 12px; color: #333;">⭐ Distribuição por Prioridade</h4>
+                    <div class="chart-placeholder" id="chart-priority">
+                        Adicione atividades para ver os gráficos
+                    </div>
+                </div>
+
+                <div class="chart-container" style="margin-top: 15px;">
+                    <h4 style="margin-bottom: 12px; color: #333;">🏢 Atividades por Seção</h4>
+                    <div class="chart-placeholder" id="chart-section">
+                        Adicione atividades para ver os gráficos
+                    </div>
+                </div>
+
+                <div class="chart-container" style="margin-top: 15px;">
+                    <h4 style="margin-bottom: 12px; color: #333;">📅 Próximos Prazos</h4>
+                    <div class="chart-placeholder" id="chart-deadline" style="height: 200px;">
+                        Adicione atividades com datas para ver os prazos
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #007bff, #0056b3); border-radius: 8px; color: white;">
+                    <h4 style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                        <span>✅</span> Informações do Sistema
+                    </h4>
+                    <ul style="font-size: 12px; line-height: 1.8; margin-left: 20px;">
+                        <li>Sincronização em tempo real</li>
+                        <li>Múltiplos usuários simultâneos</li>
+                        <li>Backup automático</li>
+                        <li>Gráficos dinâmicos</li>
+                        <li>Acesso seguro com login</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // ============================================
+        // CONFIGURAÇÃO DO FIREBASE - JÁ PRONTA!
+        // ============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyA0PcElMs8LGKApfsdQ6_H61c6OkV7KsnI",
+            authDomain: "eleicoes-2026-5w2h.firebaseapp.com",
+            databaseURL: "https://eleicoes-2026-5w2h-default-rtdb.firebaseio.com",
+            projectId: "eleicoes-2026-5w2h",
+            storageBucket: "eleicoes-2026-5w2h.firebasestorage.app",
+            messagingSenderId: "857464619965",
+            appId: "1:857464619965:web:91e58693f381ab0f5948d4",
+            measurementId: "G-15LBC2WX4C"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        const database = firebase.database();
+        const auth = firebase.auth();
+        
+        let currentUser = null;
+        let activities = [];
+
+        // ============================================
+        // AUTENTICAÇÃO
+        // ============================================
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                loadUserInfo();
+                loadActivities();
+                loadOnlineUsers();
+                showMainContent();
+            } else {
+                showAuthSection();
+            }
+        });
+
+        function loadUserInfo() {
+            const userInfo = document.getElementById('user-info');
+            userInfo.style.display = 'flex';
+            userInfo.innerHTML = `
+                <span style="font-size: 24px;">👤</span>
+                <span style="font-weight: 600;">${currentUser.email}</span>
+                <span style="background: #28a745; color: white; padding: 3px 12px; border-radius: 15px; font-size: 11px; font-weight: bold;">
+                    ✅ Online
+                </span>
+            `;
+        }
+
+        function showAuthSection() {
+            document.getElementById('auth-section').style.display = 'block';
+            document.getElementById('main-content').style.display = 'none';
+            document.getElementById('status-bar').style.display = 'none';
+            document.getElementById('user-info').style.display = 'none';
+        }
+
+        function showMainContent() {
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('main-content').style.display = 'grid';
+            document.getElementById('status-bar').style.display = 'grid';
+        }
+
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                showNotification('⚠️ Preencha email e senha', 'error');
+                return;
+            }
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    showNotification('✅ Login realizado com sucesso!', 'success');
+                    document.getElementById('email').value = '';
+                    document.getElementById('password').value = '';
+                })
+                .catch((error) => {
+                    showNotification('❌ ' + error.message, 'error');
+                });
+        }
+
+        function register() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                showNotification('⚠️ Preencha email e senha', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showNotification('⚠️ A senha deve ter no mínimo 6 caracteres', 'error');
+                return;
+            }
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(() => {
+                    showNotification('✅ Conta criada com sucesso! Faça login.', 'success');
+                    document.getElementById('email').value = '';
+                    document.getElementById('password').value = '';
+                })
+                .catch((error) => {
+                    showNotification('❌ ' + error.message, 'error');
+                });
+        }
+
+        function logout() {
+            auth.signOut().then(() => {
+                showNotification('👋 Logout realizado com sucesso!', 'info');
+            });
+        }
+
+        // ============================================
+        // ATIVIDADES - CRUD
+        // ============================================
+        function loadActivities() {
+            const activitiesRef = database.ref('activities');
+            
+            activitiesRef.on('value', (snapshot) => {
+                activities = [];
+                snapshot.forEach((childSnapshot) => {
+                    activities.push({
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    });
+                });
+                
+                loadActivitiesToUI();
+                updateStats();
+                generateCharts();
+            });
+        }
+
+        function loadActivitiesToUI() {
+            const list = document.getElementById('activity-list');
+            
+            if (activities.length === 0) {
+                list.innerHTML = `
+                    <p style="text-align: center; color: #999; padding: 60px 0; font-size: 16px;">
+                        📋 Nenhuma atividade cadastrada ainda.<br>
+                        <span style="display: block; margin-top: 10px; font-size: 14px;">Clique em "Nova Atividade" para começar.</span>
+                    </p>
+                `;
+                return;
+            }
+
+            // Ordenar por data (mais recente primeiro)
+            activities.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+            list.innerHTML = activities.map(act => {
+                const priorityClass = {
+                    'alta': 'priority-alta',
+                    'media': 'priority-media',
+                    'baixa': 'priority-baixa'
+                }[act.priority || 'media'];
+
+                const statusClass = {
+                    'concluido': 'status-concluido',
+                    'andamento': 'status-andamento',
+                    'pendente': 'status-pendente'
+                }[act.status || 'pendente'];
+
+                const priorityText = {
+                    'alta': '🔴 Alta',
+                    'media': '🟡 Média',
+                    'baixa': '🟢 Baixa'
+                }[act.priority || 'media'];
+
+                const statusText = {
+                    'concluido': '✅ Concluído',
+                    'andamento': '🔄 Em Andamento',
+                    'pendente': '⏳ Pendente'
+                }[act.status || 'pendente'];
+
+                const sectionText = {
+                    'planejamento': 'Planejamento',
+                    'logistica': 'Logística',
+                    'comunicacao': 'Comunicação',
+                    'juridico': 'Jurídico',
+                    'ti': 'TI / Tecnologia',
+                    'financeiro': 'Financeiro',
+                    'outros': 'Outros'
+                }[act.section || 'outros'];
+
+                const createdAt = act.createdAt ? new Date(act.createdAt).toLocaleDateString('pt-BR') : 'N/A';
+                const whenDate = act.when ? new Date(act.when).toLocaleDateString('pt-BR') : '-';
+
+                return `
+                    <div class="activity-card ${statusClass}">
+                        <div class="activity-header">
+                            <span class="activity-title">📋 ${act.what || 'Sem título'}</span>
+                            <span class="priority-badge ${priorityClass}">${priorityText}</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 13px; margin-top: 10px;">
+                            <div><strong>📍 Where:</strong> ${act.where || '-'}</div>
+                            <div><strong>📅 When:</strong> ${whenDate}</div>
+                            <div><strong>👤 Who:</strong> ${act.who || '-'}</div>
+                            <div><strong>🏢 Seção:</strong> ${sectionText}</div>
+                            <div><strong>📊 Status:</strong> ${statusText}</div>
+                            <div><strong>⏰ Criado:</strong> ${createdAt}</div>
+                        </div>
+                        ${act.why || act.how || act.howMuch ? `
+                        <div style="margin-top: 12px; padding: 12px; background: white; border-radius: 6px; font-size: 12px;">
+                            ${act.why ? `<div><strong>🎯 Why:</strong> ${act.why}</div>` : ''}
+                            ${act.how ? `<div><strong>🔧 How:</strong> ${act.how}</div>` : ''}
+                            ${act.howMuch ? `<div><strong>💰 How Much:</strong> ${act.howMuch}</div>` : ''}
+                        </div>
+                        ` : ''}
+                        <div class="activity-actions">
+                            <button class="btn btn-warning" onclick="editActivity('${act.id}')">✏️ Editar</button>
+                            <button class="btn btn-danger" onclick="deleteActivity('${act.id}')">🗑️ Excluir</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showAddForm() {
+            document.getElementById('add-form').style.display = 'block';
+            
+            // Resetar formulário
+            document.getElementById('what').value = '';
+            document.getElementById('why').value = '';
+            document.getElementById('where').value = '';
+            document.getElementById('when').value = '';
+            document.getElementById('who').value = '';
+            document.getElementById('how').value = '';
+            document.getElementById('how-much').value = '';
+            document.getElementById('priority').value = 'media';
+            document.getElementById('status').value = 'pendente';
+            document.getElementById('section').value = 'planejamento';
+            
+            // Mudar texto do botão para "Adicionar"
+            const saveBtn = document.querySelector('#add-form button:first-child');
+            saveBtn.textContent = '✅ Adicionar Atividade';
+            saveBtn.onclick = addActivity;
+        }
+
+        function hideAddForm() {
+            document.getElementById('add-form').style.display = 'none';
+        }
+
+        function addActivity() {
+            const activity = {
+                what: document.getElementById('what').value,
+                why: document.getElementById('why').value,
+                where: document.getElementById('where').value,
+                when: document.getElementById('when').value,
+                who: document.getElementById('who').value,
+                how: document.getElementById('how').value,
+                howMuch: document.getElementById('how-much').value,
+                priority: document.getElementById('priority').value,
+                status: document.getElementById('status').value,
+                section: document.getElementById('section').value,
+                createdAt: new Date().toISOString(),
+                createdBy: currentUser.email
+            };
+
+            if (!activity.what) {
+                showNotification('⚠️ Preencha pelo menos o campo "What (O quê?)"', 'error');
+                return;
+            }
+
+            const activitiesRef = database.ref('activities');
+            activitiesRef.push(activity);
+
+            showNotification('✅ Atividade adicionada com sucesso!', 'success');
+            hideAddForm();
+        }
+
+        function editActivity(id) {
+            const activity = activities.find(a => a.id === id);
+            if (!activity) return;
+
+            document.getElementById('what').value = activity.what || '';
+            document.getElementById('why').value = activity.why || '';
+            document.getElementById('where').value = activity.where || '';
+            document.getElementById('when').value = activity.when || '';
+            document.getElementById('who').value = activity.who || '';
+            document.getElementById('how').value = activity.how || '';
+            document.getElementById('how-much').value = activity.howMuch || '';
+            document.getElementById('priority').value = activity.priority || 'media';
+            document.getElementById('status').value = activity.status || 'pendente';
+            document.getElementById('section').value = activity.section || 'planejamento';
+
+            showAddForm();
+
+            // Mudar botão para "Atualizar"
+            const saveBtn = document.querySelector('#add-form button:first-child');
+            saveBtn.textContent = '🔄 Atualizar Atividade';
+            saveBtn.onclick = function() {
+                updateActivity(id);
+            };
+        }
+
+        function updateActivity(id) {
+            const activity = {
+                what: document.getElementById('what').value,
+                why: document.getElementById('why').value,
+                where: document.getElementById('where').value,
+                when: document.getElementById('when').value,
+                who: document.getElementById('who').value,
+                how: document.getElementById('how').value,
+                howMuch: document.getElementById('how-much').value,
+                priority: document.getElementById('priority').value,
+                status: document.getElementById('status').value,
+                section: document.getElementById('section').value,
+                updatedAt: new Date().toISOString()
+            };
+
+            const activityRef = database.ref('activities/' + id);
+            activityRef.update(activity);
+
+            showNotification('✅ Atividade atualizada com sucesso!', 'success');
+            hideAddForm();
+            
+            // Restaurar botão para adicionar
+            const saveBtn = document.querySelector('#add-form button:first-child');
+            saveBtn.textContent = '✅ Adicionar Atividade';
+            saveBtn.onclick = addActivity;
+        }
+
+        function deleteActivity(id) {
+            if (confirm('⚠️ Tem certeza que deseja excluir esta atividade?')) {
+                const activityRef = database.ref('activities/' + id);
+                activityRef.remove();
+                showNotification('🗑️ Atividade excluída com sucesso!', 'success');
+            }
+        }
+
+        // ============================================
+        // ESTATÍSTICAS E GRÁFICOS
+        // ============================================
+        function updateStats() {
+            const total = activities.length;
+            const concluidas = activities.filter(a => a.status === 'concluido').length;
+            const andamento = activities.filter(a => a.status === 'andamento').length;
+            const pendentes = activities.filter(a => a.status === 'pendente').length;
+
+            document.getElementById('total-atividades').textContent = total;
+            document.getElementById('concluidas').textContent = concluidas;
+            document.getElementById('andamento').textContent = andamento;
+            document.getElementById('pendentes').textContent = pendentes;
+
+            // Atualizar progresso
+            const progress = total > 0 ? Math.round((concluidas / total) * 100) : 0;
+            document.querySelector('.progress-bar').textContent = `${progress}% concluído`;
+        }
+
+        function generateCharts() {
+            if (activities.length === 0) {
+                return;
+            }
+
+            const total = activities.length;
+
+            // Gráfico de Status
+            const statusChart = document.getElementById('chart-status');
+            const concluidas = activities.filter(a => a.status === 'concluido').length;
+            const andamento = activities.filter(a => a.status === 'andamento').length;
+            const pendentes = activities.filter(a => a.status === 'pendente').length;
+            
+            statusChart.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; font-size: 13px;">
+                            <span>✅ Concluídas (${concluidas})</span>
+                            <span>${total > 0 ? Math.round((concluidas/total)*100) : 0}%</span>
+                        </div>
+                        <div style="background: #e9ecef; height: 30px; border-radius: 15px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #28a745, #20c997); height: 100%; border-radius: 15px; width: ${(concluidas/total)*100}%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">
+                                ${concluidas}
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; font-size: 13px;">
+                            <span>🔄 Em Andamento (${andamento})</span>
+                            <span>${total > 0 ? Math.round((andamento/total)*100) : 0}%</span>
+                        </div>
+                        <div style="background: #e9ecef; height: 30px; border-radius: 15px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #ffc107, #ffda6a); height: 100%; border-radius: 15px; width: ${(andamento/total)*100}%; display: flex; align-items: center; justify-content: center; color: #333; font-weight: bold; font-size: 12px;">
+                                ${andamento}
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; font-size: 13px;">
+                            <span>⏳ Pendentes (${pendentes})</span>
+                            <span>${total > 0 ? Math.round((pendentes/total)*100) : 0}%</span>
+                        </div>
+                        <div style="background: #e9ecef; height: 30px; border-radius: 15px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #dc3545, #ff6b6b); height: 100%; border-radius: 15px; width: ${(pendentes/total)*100}%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">
+                                ${pendentes}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Gráfico de Prioridade
+            const priorityChart = document.getElementById('chart-priority');
+            const alta = activities.filter(a => a.priority === 'alta').length;
+            const media = activities.filter(a => a.priority === 'media').length;
+            const baixa = activities.filter(a => a.priority === 'baixa').length;
+            
+            priorityChart.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; font-size: 13px;">
+                            <span>🔴 Alta (${alta})</span>
+                            <span>${total > 0 ? Math.round((alta/total)*100) : 0}%</span>
+                        </div>
+                        <div style="background: #e9ecef; height: 28px; border-radius: 15px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #dc3545, #c82333); height: 100%; border-radius: 15px; width: ${(alta/total)*100}%;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; font-size: 13px;">
+                            <span>🟡 Média (${media})</span>
+                            <span>${total > 0 ? Math.round((media/total)*100) : 0}%</span>
+                        </div>
+                        <div style="background: #e9ecef; height: 28px; border-radius: 15px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #ffc107, #e0a800); height: 100%; border-radius: 15px; width: ${(media/total)*100}%;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; font-size: 13px;">
+                            <span>🟢 Baixa (${baixa})</span>
+                            <span>${total > 0 ? Math.round((baixa/total)*100) : 0}%</span>
+                        </div>
+                        <div style="background: #e9ecef; height: 28px; border-radius: 15px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #28a745, #218838); height: 100%; border-radius: 15px; width: ${(baixa/total)*100}%;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Gráfico por Seção
+            const sectionChart = document.getElementById('chart-section');
+            const sections = {
+                planejamento: activities.filter(a => a.section === 'planejamento').length,
+                logistica: activities.filter(a => a.section === 'logistica').length,
+                comunicacao: activities.filter(a => a.section === 'comunicacao').length,
+                juridico: activities.filter(a => a.section === 'juridico').length,
+                ti: activities.filter(a => a.section === 'ti').length,
+                financeiro: activities.filter(a => a.section === 'financeiro').length,
+                outros: activities.filter(a => a.section === 'outros').length
+            };
+            
+            const sectionNames = {
+                planejamento: 'Planejamento',
+                logistica: 'Logística',
+                comunicacao: 'Comunicação',
+                juridico: 'Jurídico',
+                ti: 'TI / Tecnologia',
+                financeiro: 'Financeiro',
+                outros: 'Outros'
+            };
+            
+            const colors = {
+                planejamento: '#007bff',
+                logistica: '#28a745',
+                comunicacao: '#ffc107',
+                juridico: '#dc3545',
+                ti: '#17a2b8',
+                financeiro: '#6c757d',
+                outros: '#343a40'
+            };
+            
+            let sectionHTML = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+            for (const [section, count] of Object.entries(sections)) {
+                if (count > 0) {
+                    const width = total > 0 ? (count / total) * 100 : 0;
+                    
+                    sectionHTML += `
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; font-weight: 500;">
+                                <span>${sectionNames[section]} (${count})</span>
+                                <span>${Math.round(width)}%</span>
+                            </div>
+                            <div style="background: #e9ecef; height: 22px; border-radius: 12px; overflow: hidden;">
+                                <div style="background: ${colors[section]}; height: 100%; width: ${width}%; border-radius: 12px;"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            sectionHTML += '</div>';
+            
+            sectionChart.innerHTML = sectionHTML || '<p style="text-align: center; color: #999; font-size: 13px;">Nenhuma atividade por seção</p>';
+
+            // Gráfico de Prazos
+            const deadlineChart = document.getElementById('chart-deadline');
+            const upcoming = activities
+                .filter(a => a.when)
+                .sort((a, b) => new Date(a.when) - new Date(b.when))
+                .slice(0, 5);
+            
+            if (upcoming.length > 0) {
+                deadlineChart.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        ${upcoming.map(act => {
+                            const date = new Date(act.when);
+                            const today = new Date();
+                            const diffTime = date - today;
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            
+                            let statusColor = '#28a745';
+                            let statusText = 'No prazo';
+                            
+                            if (diffDays < 0) {
+                                statusColor = '#dc3545';
+                                statusText = 'Atrasado';
+                            } else if (diffDays <= 3) {
+                                statusColor = '#ffc107';
+                                statusText = 'Urgente';
+                            } else if (diffDays <= 7) {
+                                statusColor = '#17a2b8';
+                                statusText = 'Essa semana';
+                            }
+                            
+                            return `
+                                <div style="border-left: 4px solid ${statusColor}; padding-left: 10px;">
+                                    <div style="font-weight: 600; font-size: 13px; margin-bottom: 3px;">${act.what.substring(0, 30)}${act.what.length > 30 ? '...' : ''}</div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666;">
+                                        <span>📅 ${date.toLocaleDateString('pt-BR')}</span>
+                                        <span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold;">
+                                            ${statusText}
+                                        </span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            } else {
+                deadlineChart.innerHTML = '<p style="text-align: center; color: #999; font-size: 13px;">Nenhuma atividade com data cadastrada</p>';
+            }
+        }
+
+        // ============================================
+        // BACKUP E RESTAURAÇÃO
+        // ============================================
+        function exportBackup() {
+            const dataStr = JSON.stringify(activities, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const exportFileDefaultName = `backup-eleicoes-2026-${new Date().toISOString().split('T')[0]}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showNotification('✅ Backup exportado com sucesso!', 'success');
+        }
+
+        function importBackup() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        
+                        if (confirm(`⚠️ Deseja restaurar ${data.length} atividades?\n\nIsso substituirá os dados atuais do sistema!`)) {
+                            const activitiesRef = database.ref('activities');
+                            
+                            // Limpar dados antigos
+                            activitiesRef.remove().then(() => {
+                                // Adicionar novos dados
+                                const promises = data.map(activity => {
+                                    return activitiesRef.push(activity);
+                                });
+                                
+                                Promise.all(promises).then(() => {
+                                    showNotification('✅ Backup restaurado com sucesso!', 'success');
+                                });
+                            });
+                        }
+                    } catch (error) {
+                        showNotification('❌ Erro ao importar backup: ' + error.message, 'error');
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+
+        // ============================================
+        // USUÁRIOS ONLINE
+        // ============================================
+        function loadOnlineUsers() {
+            if (!currentUser) return;
+
+            const usersRef = database.ref('onlineUsers');
+            const userStatusRef = database.ref('onlineUsers/' + currentUser.uid);
+            
+            // Marcar usuário como online
+            userStatusRef.set({
+                email: currentUser.email,
+                name: currentUser.email.split('@')[0],
+                lastSeen: firebase.database.ServerValue.TIMESTAMP,
+                online: true,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Monitorar usuários online
+            usersRef.on('value', (snapshot) => {
+                const usersList = document.getElementById('users-list');
+                let html = '';
+                let onlineCount = 0;
+                let offlineCount = 0;
+                
+                snapshot.forEach((childSnapshot) => {
+                    const userData = childSnapshot.val();
+                    const isOnline = userData.online && (Date.now() - userData.lastSeen < 120000); // 2 minutos
+                    
+                    if (isOnline) onlineCount++;
+                    else offlineCount++;
+                    
+                    html += `
+                        <div class="online-user">
+                            <span class="${isOnline ? 'online-dot' : 'offline-dot'}"></span>
+                            <span style="font-weight: ${isOnline ? '600' : '400'};">
+                                ${userData.name || userData.email}
+                            </span>
+                            ${!isOnline ? `<span style="font-size: 10px; color: #999; margin-left: 5px;">(offline)</span>` : ''}
+                        </div>
+                    `;
+                });
+                
+                if (html === '') {
+                    usersList.innerHTML = '<p style="color: #999; font-size: 12px;">Nenhum usuário</p>';
+                } else {
+                    usersList.innerHTML = `
+                        <div style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #ddd; font-weight: 600; color: #333;">
+                            🟢 Online: ${onlineCount} | ⚪ Offline: ${offlineCount}
+                        </div>
+                        ${html}
+                    `;
+                }
+            });
+            
+            // Atualizar status periodicamente
+            setInterval(() => {
+                userStatusRef.update({
+                    lastSeen: firebase.database.ServerValue.TIMESTAMP
+                });
+            }, 60000); // A cada 60 segundos
+            
+            // Lidar com desconexão
+            window.addEventListener('beforeunload', () => {
+                userStatusRef.update({
+                    online: false,
+                    lastSeen: firebase.database.ServerValue.TIMESTAMP
+                });
+            });
+        }
+
+        // ============================================
+        // NOTIFICAÇÕES
+        // ============================================
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+
+        // ============================================
+        // ATALHOS DE TECLADO
+        // ============================================
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideAddForm();
+            }
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                showAddForm();
+            }
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                exportBackup();
+            }
+        });
+    </script>
+</body>
 </html>
