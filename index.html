@@ -812,8 +812,8 @@
                 return;
             }
 
-            // Ordenar por data (mais recente primeiro)
-            activities.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+            // Ordenar por data (mais antiga primeiro) - ALTERAÇÃO FEITA AQUI!
+            activities.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
 
             list.innerHTML = activities.map(act => {
                 const priorityClass = {
@@ -1212,7 +1212,7 @@
         // ============================================
         function exportBackup() {
             const dataStr = JSON.stringify(activities, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const dataUri = 'application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
             const exportFileDefaultName = `backup-eleicoes-2026-${new Date().toISOString().split('T')[0]}.json`;
             
             const linkElement = document.createElement('a');
