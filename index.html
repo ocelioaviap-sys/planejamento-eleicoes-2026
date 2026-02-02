@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>5W2H - Planejamento Eleições 2026</title>
+    <title>5W2H - Planejamentos Eleições 2026</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -457,7 +457,7 @@
             }
         }
         
-        /* DEBUG - Mostrar timestamp de criação */
+        /* Debug - Mostrar timestamp de criação */
         .debug-timestamp {
             font-size: 10px;
             color: #999;
@@ -694,6 +694,7 @@
         
         let currentUser = null;
         let activities = [];
+        let currentEditId = null; // Variável para armazenar o ID da atividade sendo editada
 
         // ============================================
         // AUTENTICAÇÃO
@@ -905,6 +906,7 @@
         }
 
         function showAddForm() {
+            currentEditId = null; // Resetar ID de edição
             document.getElementById('add-form').style.display = 'block';
             
             // Resetar formulário
@@ -926,6 +928,7 @@
         }
 
         function hideAddForm() {
+            currentEditId = null;
             document.getElementById('add-form').style.display = 'none';
         }
 
@@ -963,8 +966,16 @@
 
         function editActivity(id) {
             const activity = activities.find(a => a.id === id);
-            if (!activity) return;
+            if (!activity) {
+                showNotification('❌ Atividade não encontrada!', 'error');
+                return;
+            }
 
+            // ABRIR FORMULÁRIO COM DADOS EXISTENTES
+            currentEditId = id;
+            document.getElementById('add-form').style.display = 'block';
+            
+            // PREENCHER TODOS OS CAMPOS COM OS DADOS DA ATIVIDADE
             document.getElementById('what').value = activity.what || '';
             document.getElementById('why').value = activity.why || '';
             document.getElementById('where').value = activity.where || '';
@@ -975,19 +986,22 @@
             document.getElementById('priority').value = activity.priority || 'media';
             document.getElementById('status').value = activity.status || 'pendente';
             document.getElementById('section').value = activity.section || 'planejamento';
-
-            showAddForm();
-
+            
             // Mudar botão para "Atualizar"
             const saveBtn = document.querySelector('#add-form button:first-child');
             saveBtn.textContent = '🔄 Atualizar Atividade';
             saveBtn.onclick = function() {
                 updateActivity(id);
             };
+            
+            showNotification('✏️ Editando atividade. Altere apenas os campos necessários.', 'info');
         }
 
         function updateActivity(id) {
-            const activity = {
+            const activityRef = database.ref('activities/' + id);
+            
+            // ATUALIZAR APENAS OS CAMPOS MODIFICADOS
+            const updates = {
                 what: document.getElementById('what').value,
                 why: document.getElementById('why').value,
                 where: document.getElementById('where').value,
@@ -1002,16 +1016,16 @@
                 updatedAtTimestamp: Date.now()
             };
 
-            const activityRef = database.ref('activities/' + id);
-            activityRef.update(activity);
+            // Validar campo obrigatório
+            if (!updates.what) {
+                showNotification('⚠️ Preencha pelo menos o campo "What (O quê?)"', 'error');
+                return;
+            }
+
+            activityRef.update(updates);
 
             showNotification('✅ Atividade atualizada com sucesso!', 'success');
             hideAddForm();
-            
-            // Restaurar botão para adicionar
-            const saveBtn = document.querySelector('#add-form button:first-child');
-            saveBtn.textContent = '✅ Adicionar Atividade';
-            saveBtn.onclick = addActivity;
         }
 
         function deleteActivity(id) {
