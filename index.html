@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>5W2H - Planejamento Eleições 2026 | Colaboração Firebase</title>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -280,7 +280,7 @@
 </head>
 <body>
 
-<div class="sync-status" id="syncStatus">🔄 Sincronizando com Firebase...</div>
+<div class="sync-status" id="syncStatus">🔄 Conectando ao Firebase...</div>
 
 <div class="container">
     <div class="header">
@@ -345,11 +345,12 @@
         appId: "1:857464619965:web:91e58693f381ab0f5948d4",
         measurementId: "G-15LBC2WX4C"
     };
-    firebase.initializeApp(firebaseConfig);
+    // Inicializar Firebase
+    const app = firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
     const dbRef = database.ref('eleicoes2026/dados');
 
-    // ================= DADOS ORIGINAIS COMPLETOS =================
+    // ================= DADOS ORIGINAIS COMPLETOS (TODAS AS 9 SEÇÕES COM ATIVIDADES) =================
     const ORIGINAL_DATA = [
         { title: "I. DISTRIBUIÇÃO DE MESÁRIOS", elaboracao: "Océlio", servers: [], activities: [
             { what: "Início da utilização do Convoca", when: "01/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "2026-07-01", deadline_days: "1", end_date: "2026-07-01", actual_end_date: "" },
@@ -411,48 +412,24 @@
     let currentData = [];
     let charts = {};
 
-    // ================= SINCRONIZAÇÃO COM FIREBASE =================
-    function syncToFirebase() {
-        if (!currentData) return;
-        dbRef.set(currentData)
-            .then(() => {
-                document.getElementById('syncStatus').innerHTML = '✅ Sincronizado com Firebase';
-                setTimeout(() => {
-                    document.getElementById('syncStatus').innerHTML = '🔄 Sincronizando...';
-                }, 2000);
-            })
-            .catch(err => {
-                console.error(err);
-                document.getElementById('syncStatus').innerHTML = '❌ Erro na sincronização';
-            });
-    }
-
-    function loadFromFirebase() {
-        dbRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data && Array.isArray(data) && data.length > 0) {
-                currentData = data;
-            } else {
-                currentData = JSON.parse(JSON.stringify(ORIGINAL_DATA));
-                syncToFirebase();
-            }
-            renderPlanejamento();
-            updateProgressGlobal();
-            if (document.getElementById('dashboard').classList.contains('active')) renderDashboardCharts();
-            if (document.getElementById('timeline').classList.contains('active')) renderGanttChart();
-        });
-    }
-
-    // ================= FUNÇÕES DE RENDERIZAÇÃO =================
+    // ================= FUNÇÕES DE RENDERIZAÇÃO (COM FALLBACK IMEDIATO) =================
     function renderPlanejamento() {
         const container = document.getElementById('sectionsContainer');
+        if (!container) return;
         container.innerHTML = '';
+        
+        if (!currentData || currentData.length === 0) {
+            container.innerHTML = '<div style="padding: 40px; text-align: center;">⚠️ Nenhuma atividade carregada. Recarregue a página.</div>';
+            return;
+        }
+        
         currentData.forEach((sec, sIdx) => {
             const secDiv = document.createElement('div');
             secDiv.className = 'section';
             secDiv.id = `sec-${sIdx}`;
             const whoDatalistId = `whoList-${sIdx}`;
-            let serversHtml = `<datalist id="${whoDatalistId}">${(sec.servers || []).map(srv => `<option value="${srv}">`).join('')}</datalist>`;
+            let serversHtml = `<datalist id="${whoDatalistId}">${(sec.servers || []).map(srv => `<option value="${srv.replace(/"/g, '&quot;')}">`).join('')}</datalist>`;
+            
             secDiv.innerHTML = `
                 <div class="section-header" onclick="toggleSection(${sIdx})">
                     <h3>${escapeHtml(sec.title)}</h3>
@@ -460,10 +437,15 @@
                 </div>
                 <div class="section-content" id="sectionContent-${sIdx}">
                     ${serversHtml}
-                    <div class="info-bar"><span>📋 Elaboração: ${sec.elaboracao || 'Não definido'}</span><span>📌 Atividades: ${sec.activities.length}</span></div>
+                    <div class="info-bar">
+                        <span>📋 Elaboração: ${escapeHtml(sec.elaboracao || 'Não definido')}</span>
+                        <span>📌 Atividades: ${sec.activities.length}</span>
+                    </div>
                     <div class="servers-section">
                         <strong>👥 Servidores / responsáveis cadastrados</strong>
-                        <div class="servers-list" id="serversList-${sIdx}">${(sec.servers || []).map((sv, i) => `<div class="server-tag">${escapeHtml(sv)} <button class="remove-server" onclick="removeServer(${sIdx},${i})">✖</button></div>`).join('')}</div>
+                        <div class="servers-list" id="serversList-${sIdx}">
+                            ${(sec.servers || []).map((sv, i) => `<div class="server-tag">${escapeHtml(sv)} <button class="remove-server" onclick="removeServer(${sIdx},${i})">✖</button></div>`).join('')}
+                        </div>
                         <div class="add-server-form">
                             <div class="form-group"><label>Nome servidor</label><input type="text" id="srvName-${sIdx}" placeholder="Nome completo"></div>
                             <div class="form-group"><label>Função/Área</label><input type="text" id="srvRole-${sIdx}" placeholder="Ex: Coordenador"></div>
@@ -482,16 +464,16 @@
                                     <div class="field-group"><label>⚙️ How</label><input value="${escapeHtml(act.how)}" onchange="updateAct(${sIdx},${aIdx},'how',this.value)"></div>
                                     <div class="field-group"><label>💰 How much</label><input value="${escapeHtml(act.how_much)}" onchange="updateAct(${sIdx},${aIdx},'how_much',this.value)"></div>
                                     <div class="field-group"><label>🎯 Prioridade</label><select onchange="updateAct(${sIdx},${aIdx},'priority',this.value)">
-                                        <option ${act.priority==='urgent'?'selected':''} value="urgent">🔴 Urgente</option>
-                                        <option ${act.priority==='high'?'selected':''} value="high">🟠 Alta</option>
-                                        <option ${act.priority==='medium'?'selected':''} value="medium">🟡 Média</option>
-                                        <option ${act.priority==='low'?'selected':''} value="low">🟢 Baixa</option>
+                                        <option ${act.priority === 'urgent' ? 'selected' : ''} value="urgent">🔴 Urgente</option>
+                                        <option ${act.priority === 'high' ? 'selected' : ''} value="high">🟠 Alta</option>
+                                        <option ${act.priority === 'medium' ? 'selected' : ''} value="medium">🟡 Média</option>
+                                        <option ${act.priority === 'low' ? 'selected' : ''} value="low">🟢 Baixa</option>
                                     </select></div>
                                     <div class="field-group"><label>✅ Status</label><select onchange="updateAct(${sIdx},${aIdx},'status',this.value)">
-                                        <option ${act.status==='not-started'?'selected':''} value="not-started">⚪ Não iniciado</option>
-                                        <option ${act.status==='in-progress'?'selected':''} value="in-progress">🟡 Em andamento</option>
-                                        <option ${act.status==='completed'?'selected':''} value="completed">🟢 Concluído</option>
-                                        <option ${act.status==='delayed'?'selected':''} value="delayed">🔴 Atrasado</option>
+                                        <option ${act.status === 'not-started' ? 'selected' : ''} value="not-started">⚪ Não iniciado</option>
+                                        <option ${act.status === 'in-progress' ? 'selected' : ''} value="in-progress">🟡 Em andamento</option>
+                                        <option ${act.status === 'completed' ? 'selected' : ''} value="completed">🟢 Concluído</option>
+                                        <option ${act.status === 'delayed' ? 'selected' : ''} value="delayed">🔴 Atrasado</option>
                                     </select></div>
                                     <div class="field-group"><label>📅 Data início</label><input type="date" value="${act.start_date || ''}" onchange="updateAct(${sIdx},${aIdx},'start_date',this.value)"></div>
                                     <div class="field-group"><label>⏱️ Prazo (dias)</label><input type="number" value="${act.deadline_days || ''}" onchange="updateAct(${sIdx},${aIdx},'deadline_days',this.value)"></div>
@@ -509,7 +491,10 @@
     }
 
     function updateAct(sIdx, aIdx, field, val) {
+        if (!currentData[sIdx] || !currentData[sIdx].activities[aIdx]) return;
         currentData[sIdx].activities[aIdx][field] = val;
+        
+        // Auto-calcular data fim se prazo e início existirem
         if (field === 'start_date' || field === 'deadline_days') {
             const act = currentData[sIdx].activities[aIdx];
             if (act.start_date && act.deadline_days && !isNaN(parseInt(act.deadline_days))) {
@@ -518,64 +503,264 @@
                 let end = new Date(start);
                 end.setDate(start.getDate() + parseInt(act.deadline_days));
                 act.end_date = end.toISOString().split('T')[0];
-                renderPlanejamento();
+                renderPlanejamento(); // re-render para mostrar a data calculada
                 syncToFirebase();
                 return;
             }
         }
         syncToFirebase();
-        if (['status','priority'].includes(field)) {
-            updateProgressGlobal();
-            if (document.getElementById('dashboard').classList.contains('active')) renderDashboardCharts();
-            if (document.getElementById('timeline').classList.contains('active')) renderGanttChart();
-        }
+        updateProgressGlobal();
+        if (document.getElementById('dashboard')?.classList.contains('active')) renderDashboardCharts();
+        if (document.getElementById('timeline')?.classList.contains('active')) renderGanttChart();
     }
 
     function addServer(sIdx) {
-        const name = document.getElementById(`srvName-${sIdx}`).value.trim();
-        const role = document.getElementById(`srvRole-${sIdx}`).value.trim();
-        if(name && role) {
-            if(!currentData[sIdx].servers) currentData[sIdx].servers = [];
+        const name = document.getElementById(`srvName-${sIdx}`)?.value.trim();
+        const role = document.getElementById(`srvRole-${sIdx}`)?.value.trim();
+        if (name && role && currentData[sIdx]) {
+            if (!currentData[sIdx].servers) currentData[sIdx].servers = [];
             currentData[sIdx].servers.push(`${name} (${role})`);
             syncToFirebase();
             renderPlanejamento();
         }
     }
+
     function removeServer(sIdx, idx) {
-        currentData[sIdx].servers.splice(idx,1);
-        syncToFirebase();
-        renderPlanejamento();
+        if (currentData[sIdx] && currentData[sIdx].servers) {
+            currentData[sIdx].servers.splice(idx, 1);
+            syncToFirebase();
+            renderPlanejamento();
+        }
     }
+
     function toggleSection(idx) {
         const secDiv = document.getElementById(`sec-${idx}`);
-        if(secDiv) secDiv.classList.toggle('collapsed');
+        if (secDiv) secDiv.classList.toggle('collapsed');
     }
-    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
     function updateProgressGlobal() {
         let total = 0, completed = 0;
-        currentData.forEach(sec => { sec.activities.forEach(act => { total++; if (act.status === 'completed') completed++; }); });
-        let percent = total === 0 ? 0 : Math.round((completed/total)*100);
-        document.getElementById('globalProgress').style.width = percent+'%';
-        document.getElementById('progressPercent').innerHTML = `${percent}% concluído (${completed}/${total} atividades)`;
+        if (currentData) {
+            currentData.forEach(sec => {
+                if (sec.activities) {
+                    sec.activities.forEach(act => {
+                        total++;
+                        if (act.status === 'completed') completed++;
+                    });
+                }
+            });
+        }
+        let percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+        const progressFill = document.getElementById('globalProgress');
+        const progressText = document.getElementById('progressPercent');
+        if (progressFill) progressFill.style.width = percent + '%';
+        if (progressText) progressText.innerHTML = `${percent}% concluído (${completed}/${total} atividades)`;
     }
+
+    // ================= SINCRONIZAÇÃO COM FIREBASE =================
+    let isSyncing = false;
+    function syncToFirebase() {
+        if (!currentData || isSyncing) return;
+        isSyncing = true;
+        dbRef.set(currentData)
+            .then(() => {
+                const statusDiv = document.getElementById('syncStatus');
+                if (statusDiv) {
+                    statusDiv.innerHTML = '✅ Sincronizado com Firebase';
+                    setTimeout(() => {
+                        if (statusDiv) statusDiv.innerHTML = '🔄 Sincronizando...';
+                    }, 2000);
+                }
+            })
+            .catch(err => {
+                console.error('Erro ao sincronizar:', err);
+                const statusDiv = document.getElementById('syncStatus');
+                if (statusDiv) statusDiv.innerHTML = '❌ Erro na sincronização';
+            })
+            .finally(() => { isSyncing = false; });
+    }
+
+    function loadFromFirebase() {
+        // Primeiro, renderiza com dados originais para garantir que o usuário veja algo
+        currentData = JSON.parse(JSON.stringify(ORIGINAL_DATA));
+        renderPlanejamento();
+        updateProgressGlobal();
+        
+        // Depois tenta carregar do Firebase e atualiza
+        dbRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && Array.isArray(data) && data.length > 0 && data[0].activities) {
+                currentData = data;
+                renderPlanejamento();
+                updateProgressGlobal();
+                if (document.getElementById('dashboard')?.classList.contains('active')) renderDashboardCharts();
+                if (document.getElementById('timeline')?.classList.contains('active')) renderGanttChart();
+                const statusDiv = document.getElementById('syncStatus');
+                if (statusDiv) statusDiv.innerHTML = '✅ Dados carregados do Firebase';
+                setTimeout(() => {
+                    if (statusDiv) statusDiv.innerHTML = '🔄 Sincronizando...';
+                }, 2000);
+            } else if (!data) {
+                // Se o Firebase estiver vazio, salva os originais pela primeira vez
+                syncToFirebase();
+            }
+        }, (error) => {
+            console.error('Erro no listener do Firebase:', error);
+            const statusDiv = document.getElementById('syncStatus');
+            if (statusDiv) statusDiv.innerHTML = '⚠️ Modo offline - usando dados locais';
+        });
+    }
+
+    // ================= GRÁFICOS =================
+    function renderDashboardCharts() {
+        if (!currentData) return;
+        let total = 0, completed = 0, inProgress = 0, delayed = 0;
+        let statusCount = {'not-started':0, 'in-progress':0, 'completed':0, 'delayed':0};
+        let priorityCount = {'urgent':0, 'high':0, 'medium':0, 'low':0};
+        let serverCount = {};
+        
+        currentData.forEach(sec => {
+            if (sec.activities) {
+                sec.activities.forEach(act => {
+                    total++;
+                    statusCount[act.status] = (statusCount[act.status] || 0) + 1;
+                    priorityCount[act.priority] = (priorityCount[act.priority] || 0) + 1;
+                    if (act.status === 'completed') completed++;
+                    if (act.status === 'in-progress') inProgress++;
+                    if (act.status === 'delayed') delayed++;
+                    if (act.who && act.who.trim()) {
+                        let name = act.who.split('(')[0].trim();
+                        serverCount[name] = (serverCount[name] || 0) + 1;
+                    }
+                });
+            }
+        });
+        
+        document.getElementById('totalActs').innerText = total;
+        document.getElementById('completedActs').innerText = completed;
+        document.getElementById('inProgressActs').innerText = inProgress;
+        document.getElementById('delayedActs').innerText = delayed;
+        
+        if (charts.status) charts.status.destroy();
+        if (charts.priority) charts.priority.destroy();
+        if (charts.pareto) charts.pareto.destroy();
+        if (charts.server) charts.server.destroy();
+        
+        const ctxStatus = document.getElementById('statusChart')?.getContext('2d');
+        if (ctxStatus) {
+            charts.status = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Não iniciado', 'Em andamento', 'Concluído', 'Atrasado'],
+                    datasets: [{ data: [statusCount['not-started'], statusCount['in-progress'], statusCount['completed'], statusCount['delayed']], backgroundColor: ['#94a3b8', '#facc15', '#22c55e', '#ef4444'] }]
+                }
+            });
+        }
+        
+        const ctxPrio = document.getElementById('priorityChart')?.getContext('2d');
+        if (ctxPrio) {
+            charts.priority = new Chart(ctxPrio, {
+                type: 'bar',
+                data: {
+                    labels: ['Urgente', 'Alta', 'Média', 'Baixa'],
+                    datasets: [{ label: 'Atividades', data: [priorityCount.urgent||0, priorityCount.high||0, priorityCount.medium||0, priorityCount.low||0], backgroundColor: '#8b5cf6' }]
+                }
+            });
+        }
+        
+        const secNames = currentData.map(s => s.title.substring(0, 30));
+        const secCounts = currentData.map(s => s.activities.length);
+        const ctxPar = document.getElementById('paretoChart')?.getContext('2d');
+        if (ctxPar) {
+            charts.pareto = new Chart(ctxPar, {
+                type: 'bar',
+                data: { labels: secNames, datasets: [{ label: 'Atividades por seção', data: secCounts, backgroundColor: '#a78bfa' }] }
+            });
+        }
+        
+        const sortedServers = Object.entries(serverCount).sort((a,b) => b[1] - a[1]).slice(0, 10);
+        const ctxServ = document.getElementById('serverChart')?.getContext('2d');
+        if (ctxServ) {
+            charts.server = new Chart(ctxServ, {
+                type: 'bar',
+                data: { labels: sortedServers.map(s => s[0]), datasets: [{ label: 'Atividades', data: sortedServers.map(s => s[1]), backgroundColor: '#f59e0b' }] },
+                options: { indexAxis: 'y', responsive: true }
+            });
+        }
+    }
+    
+    function renderGanttChart() {
+        const ctx = document.getElementById('ganttChartCanvas')?.getContext('2d');
+        if (!ctx) return;
+        if (charts.gantt) charts.gantt.destroy();
+        
+        let bars = [];
+        currentData.forEach((sec) => {
+            if (sec.activities) {
+                sec.activities.forEach((act) => {
+                    if (act.start_date && act.end_date) {
+                        let start = new Date(act.start_date);
+                        let end = new Date(act.end_date);
+                        if (!isNaN(start) && !isNaN(end)) {
+                            bars.push({ label: `${sec.title.substring(0,20)}... ${act.what.substring(0,30)}`, start, end, status: act.status });
+                        }
+                    }
+                });
+            }
+        });
+        
+        if (bars.length === 0) return;
+        bars.sort((a,b) => a.start - b.start);
+        const labels = bars.map(b => b.label);
+        const data = bars.map(b => ({ x: [b.start, b.end], y: b.label }));
+        const colors = bars.map(b => b.status === 'completed' ? '#2ecc71' : b.status === 'in-progress' ? '#f1c40f' : b.status === 'delayed' ? '#e74c3c' : '#95a5a6');
+        
+        charts.gantt = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: labels, datasets: [{ label: 'Duração', data: data, backgroundColor: colors, borderColor: '#2c3e50', borderWidth: 0.5, barPercentage: 0.7 }] },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { x: { type: 'time', time: { unit: 'day', tooltipFormat: 'dd/MM/yyyy' }, title: { display: true, text: 'Cronograma' } } },
+                plugins: { tooltip: { callbacks: { title: (ctx) => ctx[0].raw.y, label: (ctx) => { let d = ctx.raw.x; return `${new Date(d[0]).toLocaleDateString()} → ${new Date(d[1]).toLocaleDateString()}`; } } } }
+            }
+        });
+    }
+    
+    // ================= BACKUP E RESTAURAÇÃO =================
     function exportarJSON() {
         const dataStr = JSON.stringify(currentData, null, 2);
         const blob = new Blob([dataStr], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = `5w2h_eleicoes_${new Date().toISOString().slice(0,19)}.json`;
-        a.click(); URL.revokeObjectURL(url);
+        a.href = url;
+        a.download = `5w2h_eleicoes_${new Date().toISOString().slice(0,19)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
     }
+    
     function importarArquivo() {
         const input = document.createElement('input');
-        input.type = 'file'; input.accept = 'application/json';
+        input.type = 'file';
+        input.accept = 'application/json';
         input.onchange = e => {
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onload = ev => {
                 try {
                     const imported = JSON.parse(ev.target.result);
-                    if(Array.isArray(imported) && imported.length && imported[0].activities) {
+                    if (Array.isArray(imported) && imported.length && imported[0].activities) {
                         currentData = imported;
                         syncToFirebase();
                         renderPlanejamento();
@@ -587,93 +772,39 @@
         };
         input.click();
     }
+    
     function resetToOriginal() {
-        if(confirm('Restaurar dados originais? Todas as alterações serão perdidas permanentemente na nuvem.')) {
+        if (confirm('Restaurar dados originais? Todas as alterações serão perdidas permanentemente na nuvem.')) {
             currentData = JSON.parse(JSON.stringify(ORIGINAL_DATA));
             syncToFirebase();
             renderPlanejamento();
+            alert('Dados originais restaurados!');
         }
     }
-
-    // ================= GRÁFICOS =================
-    function renderDashboardCharts() {
-        let total=0, completed=0, inProgress=0, delayed=0;
-        let statusCount = {'not-started':0, 'in-progress':0, 'completed':0, 'delayed':0};
-        let priorityCount = {'urgent':0, 'high':0, 'medium':0, 'low':0};
-        let serverCount = {};
-        currentData.forEach(sec => sec.activities.forEach(act => {
-            total++; statusCount[act.status]++; priorityCount[act.priority] = (priorityCount[act.priority]||0)+1;
-            if(act.status==='completed') completed++;
-            if(act.status==='in-progress') inProgress++;
-            if(act.status==='delayed') delayed++;
-            if(act.who && act.who.trim()) {
-                let name = act.who.split('(')[0].trim();
-                serverCount[name] = (serverCount[name]||0)+1;
-            }
-        }));
-        document.getElementById('totalActs').innerText = total;
-        document.getElementById('completedActs').innerText = completed;
-        document.getElementById('inProgressActs').innerText = inProgress;
-        document.getElementById('delayedActs').innerText = delayed;
-        if(charts.status) charts.status.destroy();
-        if(charts.priority) charts.priority.destroy();
-        if(charts.pareto) charts.pareto.destroy();
-        if(charts.server) charts.server.destroy();
-        const ctxStatus = document.getElementById('statusChart').getContext('2d');
-        charts.status = new Chart(ctxStatus, { type: 'doughnut', data: { labels: ['Não iniciado','Em andamento','Concluído','Atrasado'], datasets: [{ data: [statusCount['not-started'], statusCount['in-progress'], statusCount['completed'], statusCount['delayed']], backgroundColor: ['#94a3b8','#facc15','#22c55e','#ef4444'] }] } });
-        const ctxPrio = document.getElementById('priorityChart').getContext('2d');
-        charts.priority = new Chart(ctxPrio, { type: 'bar', data: { labels: ['Urgente','Alta','Média','Baixa'], datasets: [{ label: 'Atividades', data: [priorityCount.urgent||0, priorityCount.high||0, priorityCount.medium||0, priorityCount.low||0], backgroundColor: '#8b5cf6' }] } });
-        const secNames = currentData.map(s => s.title.substring(0,30));
-        const secCounts = currentData.map(s => s.activities.length);
-        const ctxPar = document.getElementById('paretoChart').getContext('2d');
-        charts.pareto = new Chart(ctxPar, { type: 'bar', data: { labels: secNames, datasets: [{ label: 'Atividades por seção', data: secCounts, backgroundColor: '#a78bfa' }] } });
-        const sortedServers = Object.entries(serverCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
-        const ctxServ = document.getElementById('serverChart').getContext('2d');
-        charts.server = new Chart(ctxServ, { type: 'bar', data: { labels: sortedServers.map(s=>s[0]), datasets: [{ label: 'Atividades', data: sortedServers.map(s=>s[1]), backgroundColor: '#f59e0b' }] }, options: { indexAxis: 'y', responsive: true } });
-    }
-    function renderGanttChart() {
-        const ctx = document.getElementById('ganttChartCanvas').getContext('2d');
-        if(charts.gantt) charts.gantt.destroy();
-        let bars = [];
-        currentData.forEach((sec, si) => {
-            sec.activities.forEach((act, ai) => {
-                if(act.start_date && act.end_date) {
-                    let start = new Date(act.start_date);
-                    let end = new Date(act.end_date);
-                    if(!isNaN(start) && !isNaN(end)) {
-                        bars.push({ label: `${sec.title.substring(0,20)}... ${act.what.substring(0,30)}`, start, end, status: act.status });
-                    }
-                }
-            });
-        });
-        if(bars.length === 0) return;
-        bars.sort((a,b)=>a.start-b.start);
-        const labels = bars.map(b => b.label);
-        const data = bars.map(b => ({ x: [b.start, b.end], y: b.label }));
-        const colors = bars.map(b => b.status==='completed'?'#2ecc71': b.status==='in-progress'?'#f1c40f': b.status==='delayed'?'#e74c3c':'#95a5a6');
-        charts.gantt = new Chart(ctx, {
-            type: 'bar', data: { labels: labels, datasets: [{ label: 'Duração', data: data, backgroundColor: colors, borderColor: '#2c3e50', borderWidth: 0.5, barPercentage: 0.7 }] },
-            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { type: 'time', time: { unit: 'day', tooltipFormat: 'dd/MM/yyyy' }, title: { display: true, text: 'Cronograma' } } }, plugins: { tooltip: { callbacks: { title: (ctx) => ctx[0].raw.y, label: (ctx) => { let d = ctx.raw.x; return `${new Date(d[0]).toLocaleDateString()} → ${new Date(d[1]).toLocaleDateString()}`; } } } } }
-        });
-    }
-
+    
     function showTab(tabId, ev) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         ev.target.classList.add('active');
-        if(tabId === 'dashboard') renderDashboardCharts();
-        if(tabId === 'timeline') setTimeout(renderGanttChart, 100);
+        if (tabId === 'dashboard') setTimeout(renderDashboardCharts, 100);
+        if (tabId === 'timeline') setTimeout(renderGanttChart, 100);
     }
-
-    // Expor globalmente
-    window.updateAct = updateAct; window.addServer = addServer; window.removeServer = removeServer;
-    window.toggleSection = toggleSection; window.showTab = showTab; window.exportarJSON = exportarJSON;
-    window.importarArquivo = importarArquivo; window.resetToOriginal = resetToOriginal;
-
+    
+    // Expor funções globalmente
+    window.updateAct = updateAct;
+    window.addServer = addServer;
+    window.removeServer = removeServer;
+    window.toggleSection = toggleSection;
+    window.showTab = showTab;
+    window.exportarJSON = exportarJSON;
+    window.importarArquivo = importarArquivo;
+    window.resetToOriginal = resetToOriginal;
+    window.renderDashboardCharts = renderDashboardCharts;
+    window.renderGanttChart = renderGanttChart;
+    
     // Inicialização
     loadFromFirebase();
-    window.addEventListener('load', () => { updateProgressGlobal(); });
 </script>
 </body>
 </html>
