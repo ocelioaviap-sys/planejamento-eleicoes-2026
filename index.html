@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>5W2H - Planejamento Eleições 2026 | Sincronização Firebase</title>
-    <!-- Firebase SDKs (versão compat para uso direto) -->
+    <title>5W2H - Planejamento Eleições 2026 | Colaboração Firebase</title>
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <!-- Chart.js -->
@@ -257,6 +257,15 @@
             z-index: 999;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
+        .footer-note {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.8rem;
+            color: #475569;
+            background: rgba(255,255,255,0.7);
+            padding: 12px;
+            border-radius: 40px;
+        }
         @media (max-width: 700px) {
             .container { padding: 12px; }
             .activity-fields { grid-template-columns: 1fr; }
@@ -264,19 +273,19 @@
         }
         @media print {
             body { background: white; }
-            .tabs, .action-buttons, .add-server-form, .sync-status, .remove-server, .btn { display: none; }
+            .tabs, .action-buttons, .add-server-form, .sync-status, .remove-server, .btn, .footer-note { display: none; }
             .section-content { display: block !important; }
         }
     </style>
 </head>
 <body>
 
-<div class="sync-status" id="syncStatus">🔄 Sincronizando...</div>
+<div class="sync-status" id="syncStatus">🔄 Sincronizando com Firebase...</div>
 
 <div class="container">
     <div class="header">
         <h1>🗳️ 5W2H - Planejamento Eleições 2026</h1>
-        <p>Edição colaborativa em tempo real com Firebase</p>
+        <p>Colaboração em tempo real com sincronização automática na nuvem</p>
         <div class="progress-bar"><div class="progress-fill" id="globalProgress"></div></div>
         <div id="progressPercent" style="font-weight: 600; margin-top: 8px;">0% concluído</div>
     </div>
@@ -291,14 +300,14 @@
     <div id="planejamento" class="tab-content active">
         <div id="sectionsContainer"></div>
         <div class="action-buttons">
-            <button class="btn" onclick="exportarJSON()">📤 Exportar JSON (backup)</button>
-            <button class="btn btn-secondary" onclick="importarArquivo()">📥 Importar JSON</button>
-            <button class="btn btn-warning" onclick="resetToOriginal()">⟳ Restaurar originais</button>
+            <button class="btn" onclick="exportarJSON()">📤 Exportar backup (JSON)</button>
+            <button class="btn btn-secondary" onclick="importarArquivo()">📥 Importar backup (JSON)</button>
+            <button class="btn btn-warning" onclick="resetToOriginal()">⟳ Restaurar dados originais</button>
             <button class="btn" onclick="window.print()">🖨️ Imprimir / PDF</button>
         </div>
-        <p style="font-size: 0.75rem; text-align: center; margin-top: 20px; color: #475569;">
-            ✅ Todas as alterações são salvas automaticamente no Firebase e compartilhadas com todos os colaboradores.
-        </p>
+        <div class="footer-note">
+            ☁️ <strong>Sincronização automática via Firebase</strong> – Todas as alterações são salvas instantaneamente na nuvem e compartilhadas com todos os colaboradores em tempo real.
+        </div>
     </div>
 
     <!-- Dashboard -->
@@ -325,7 +334,7 @@
 </div>
 
 <script>
-    // ================= CONFIGURAÇÃO DO FIREBASE (fornecida pelo usuário) =================
+    // ================= CONFIGURAÇÃO DO FIREBASE =================
     const firebaseConfig = {
         apiKey: "AIzaSyA0PcElMs8LGKApfsdQ6_H61c6OkV7KsnI",
         authDomain: "eleicoes-2026-5w2h.firebaseapp.com",
@@ -336,7 +345,6 @@
         appId: "1:857464619965:web:91e58693f381ab0f5948d4",
         measurementId: "G-15LBC2WX4C"
     };
-    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
     const dbRef = database.ref('eleicoes2026/dados');
@@ -406,10 +414,17 @@
     // ================= SINCRONIZAÇÃO COM FIREBASE =================
     function syncToFirebase() {
         if (!currentData) return;
-        dbRef.set(currentData).then(() => {
-            document.getElementById('syncStatus').innerHTML = '✅ Sincronizado';
-            setTimeout(() => { document.getElementById('syncStatus').innerHTML = '🔄 Sincronizando...'; }, 2000);
-        }).catch(err => console.error(err));
+        dbRef.set(currentData)
+            .then(() => {
+                document.getElementById('syncStatus').innerHTML = '✅ Sincronizado com Firebase';
+                setTimeout(() => {
+                    document.getElementById('syncStatus').innerHTML = '🔄 Sincronizando...';
+                }, 2000);
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('syncStatus').innerHTML = '❌ Erro na sincronização';
+            });
     }
 
     function loadFromFirebase() {
@@ -419,7 +434,7 @@
                 currentData = data;
             } else {
                 currentData = JSON.parse(JSON.stringify(ORIGINAL_DATA));
-                syncToFirebase(); // salva os originais no Firebase se vazio
+                syncToFirebase();
             }
             renderPlanejamento();
             updateProgressGlobal();
@@ -564,7 +579,7 @@
                         currentData = imported;
                         syncToFirebase();
                         renderPlanejamento();
-                        alert('Dados importados e sincronizados!');
+                        alert('Backup importado e sincronizado com a nuvem!');
                     } else alert('Arquivo inválido');
                 } catch { alert('Erro ao ler arquivo'); }
             };
@@ -573,7 +588,7 @@
         input.click();
     }
     function resetToOriginal() {
-        if(confirm('Restaurar dados originais? Todas as alterações serão perdidas.')) {
+        if(confirm('Restaurar dados originais? Todas as alterações serão perdidas permanentemente na nuvem.')) {
             currentData = JSON.parse(JSON.stringify(ORIGINAL_DATA));
             syncToFirebase();
             renderPlanejamento();
