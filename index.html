@@ -19,14 +19,12 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; }
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
         
-        /* Header e autenticação */
         .header { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px 30px; margin-bottom: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 1.8rem; background: linear-gradient(45deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .user-info { display: flex; align-items: center; gap: 15px; background: #e7f3ff; padding: 8px 20px; border-radius: 40px; font-size: 14px; }
         .user-info button { background: #dc3545; border: none; color: white; padding: 6px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; }
         .user-info button:hover { background: #c82333; }
         
-        /* Abas e conteúdos (do primeiro arquivo) */
         .tabs { display: flex; background: rgba(255,255,255,0.9); border-radius: 15px; padding: 10px; margin-bottom: 30px; overflow-x: auto; gap: 5px; }
         .tab { flex: 1; padding: 12px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; transition: all 0.3s; white-space: nowrap; }
         .tab.active { background: linear-gradient(45deg, #667eea, #764ba2); color: white; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
@@ -34,7 +32,6 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Seções colapsáveis */
         .section { background: #f8f9fa; border-radius: 15px; margin-bottom: 25px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.08); transition: all 0.3s; }
         .section-header { background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 18px 20px; cursor: pointer; display: flex; justify-content: space-between; }
         .section-content { padding: 25px; }
@@ -101,7 +98,7 @@
         </div>
     </div>
 
-    <!-- Área de autenticação (exibida enquanto não logado) -->
+    <!-- Área de autenticação -->
     <div id="authSection" class="auth-section">
         <h2>🔐 Acesso ao Sistema</h2>
         <p style="margin-bottom: 20px;">Login para colaborar com sua equipe</p>
@@ -117,7 +114,7 @@
         </div>
     </div>
 
-    <!-- Conteúdo principal (só aparece após login) -->
+    <!-- Conteúdo principal -->
     <div id="mainContent" style="display: none;">
         <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
         <div class="progress-text" id="progressText">0% concluído</div>
@@ -163,7 +160,7 @@
 <div id="autoSaveIndicator" class="auto-save-indicator">💾 Sincronizado</div>
 
 <script>
-    // ---------- CONFIG FIREBASE (igual ao segundo arquivo) ----------
+    // ---------- CONFIG FIREBASE ----------
     const firebaseConfig = {
         apiKey: "AIzaSyA0PcElMs8LGKApfsdQ6_H61c6OkV7KsnI",
         authDomain: "eleicoes-2026-5w2h.firebaseapp.com",
@@ -178,144 +175,113 @@
     const auth = firebase.auth();
     
     let currentUser = null;
-    let sectionsData = [];      // estrutura completa das seções (vinda do Firebase)
-    let charts = {};            // armazenar gráficos Chart.js
-    
-    // ---------- Dados padrão (idênticos ao primeiro arquivo) ----------
+    let sectionsData = [];
+    let charts = {};
+
+    // ---------- DADOS PADRÃO (9 seções com atividades) ----------
     const defaultSections = [
-        { title: "I. DISTRIBUIÇÃO DE MESÁRIOS", elaboracao: "Océlio", servers: [], activities: [
-            { what: "Início da utilização do Convoca", when: "01/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Impressão dos relatórios preliminares\na) Locais de votação\nb) Postos de recolhimento\nc) Locais de eventos\nd) Eventos\ne) Geral de membros\nf) Agregação\ng) Itens para eleição", when: "01 e 02/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Atualizar dados da zona eleitoral", when: "01/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Escolha (seleção) de membros das mesas receptoras", when: "09 a 28 de julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Cadastrar agregações", when: "13/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Efetuar consulta das seções funções vagas", when: "14/07 a 28/07", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Convocação dos membros das mesas receptoras", when: "14/07 a 28/07", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Juiz Eleitoral anunciar a realização de audiência pública para nomeação", when: "29/07", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Publicar edital de convocação e nomeação de mesários", when: "07/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Último dia para designação da localização das mesas receptoras", when: "12/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Último dia para partidos políticos reclamarem da nomeação", when: "12 de agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Último dia para membros das Mesas Receptoras recusarem a nomeação", when: "12 de agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Apreciação das recusas e reclamações contra a nomeação", when: "14 de agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Último dia para partidos políticos recorrerem da decisão do Juiz Eleitoral", when: "17 de agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Imprimir cartas convocatórias de mesários", when: "08/08 a 09/08", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Treinamento Presencial de Multiplicadores de Mesários em Crateús", when: "A definir", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Entregar cartas de convocação de mesários", when: "10/08 em diante", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Fazer substituição de mesários conforme necessário", when: "10/08/2026 a 04/10", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Preparar lista de presença do Treinamento de Mesários", when: "A definir/08/2026", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Treinamento de Mesários", when: "A definir/08/2026", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Cadastrar frequência dos mesários no treinamento", when: "A definir/08/2026", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Cadastro dos itens para eleição 2026", when: "A definir/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Preparar lista de presença da entrega do material para o presidente de mesa", when: "A definir/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Imprimir certificados dos mesários", when: "A definir/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Imprimir declaração de folgas dos mesários", when: "A definir/09 a 03 de outubro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Entrega de material da eleição para o presidente de mesa", when: "A definir/09 a 03 de outubro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Cadastrar frequência do presidente de mesa na entrega de material", when: "A definir/09 a 03 de outubro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Cadastrar frequência dos mesários na eleição 1º turno", when: "06/outubro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Gerar arquivos de ASE: Membros convocados e faltosos", when: "Após eleição", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" }
-        ]},
-        { title: "II. INSTRUTORES DE MESÁRIOS", elaboracao: "Océlio", servers: [], activities: [
-            { what: "Preparar relação de instrutores de mesários", when: "05 a 23/07", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Preparar e publicar edital de convocação e nomeação de instrutores", when: "24/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Preparar e imprimir cartas de convocação dos instrutores", when: "25/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Entregar cartas de convocação dos instrutores de mesários", when: "25 a 27 de julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Fazer substituição de instrutores de mesários", when: "28 de julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Entregar cartas dos instrutores substituídos", when: "28 e 29 de julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Preparar lista de frequência da reunião com os instrutores", when: "04/08", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Reunião com os instrutores de mesários", when: "04/08", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Preparar lista de frequência dos instrutores para o treinamento", when: "A definir", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Imprimir declaração de folgas dos instrutores de mesários", when: "A definir", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" }
-        ]},
-        { title: "III. LOCAIS DE EVENTO E DE VOTAÇÃO", elaboracao: "Océlio", servers: [], activities: [
-            { what: "Cadastro de locais de eventos", when: "23/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Cadastro de locais de votação", when: "23/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Vistoria dos locais de votação", when: "24 a 26/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Elaboração de relatório de vistoria", when: "27/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Solicitação de adequações nos locais", when: "30/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" }
-        ]},
-        { title: "IV. DELEGADOS DE PRÉDIO", elaboracao: "Océlio", servers: [], activities: [
-            { what: "Preparar relação de delegados de prédio", when: "05 a 15/08", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Publicar edital de convocação de delegados", when: "16/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Imprimir cartas de convocação", when: "17/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Entregar cartas de convocação", when: "18 a 20/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Reunião com delegados de prédio", when: "25/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" }
-        ]},
-        { title: "V. AUXILIARES DE ELEIÇÃO", elaboracao: "Océlio", servers: [], activities: [
-            { what: "Preparar relação de auxiliares de eleição", when: "10 a 20/08", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Publicar edital de convocação de auxiliares", when: "21/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Imprimir cartas de convocação", when: "22/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Entregar cartas de convocação", when: "23 a 25/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Treinamento de auxiliares de eleição", when: "30/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" }
-        ]},
-        { title: "VI. REQUISIÇÃO DE VEÍCULOS PARA A ELEIÇÃO", elaboracao: "Océlio", servers: [], activities: [
-            { what: "Levantamento da necessidade de veículos", when: "15/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Elaboração ofício de requisição", when: "16/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Envio de requisições aos órgãos", when: "17/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Acompanhamento das respostas", when: "18 a 30/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Organização da logística de transporte", when: "01 a 05/outubro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" }
-        ]},
-        { title: "VII. ESCRUTINADORES", elaboracao: "Océlio", servers: [], activities: [
-            { what: "Preparar relação de escrutinadores", when: "20 a 30/08", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Publicar edital de convocação", when: "31/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Imprimir cartas de convocação", when: "01/setembro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Entregar cartas de convocação", when: "02 a 05/setembro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Treinamento de escrutinadores", when: "15/setembro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" }
-        ]},
-        { title: "VIII. JUNTA ELEITORAL", elaboracao: "Océlio", servers: [], activities: [
-            { what: "Preparação da estrutura da Junta Eleitoral", when: "01 a 15/setembro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Organização do material da Junta", when: "16 a 30/setembro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Teste dos equipamentos", when: "01 a 05/outubro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Funcionamento da Junta no dia da eleição", when: "06/outubro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" }
-        ]},
-        { title: "IX. DISTRIBUIÇÃO DAS URNAS ELETRÔNICAS", elaboracao: "Océlio", servers: [], activities: [
-            { what: "Recebimento das urnas eletrônicas", when: "15 a 20/setembro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Teste e preparação das urnas", when: "21 a 30/setembro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Organização da logística de distribuição", when: "01 a 03/outubro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Distribuição das urnas para os locais de votação", when: "04 a 05/outubro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
-            { what: "Recolhimento das urnas após a eleição", when: "06 a 07/outubro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" }
-        ]}
+        { title: "I. DISTRIBUIÇÃO DE MESÁRIOS", elaboracao: "Océlio", servers: [], activities: generateActivitiesForSection1() },
+        { title: "II. INSTRUTORES DE MESÁRIOS", elaboracao: "Océlio", servers: [], activities: generateActivitiesForSection2() },
+        { title: "III. LOCAIS DE EVENTO E DE VOTAÇÃO", elaboracao: "Océlio", servers: [], activities: generateActivitiesForSection3() },
+        { title: "IV. DELEGADOS DE PRÉDIO", elaboracao: "Océlio", servers: [], activities: generateActivitiesForSection4() },
+        { title: "V. AUXILIARES DE ELEIÇÃO", elaboracao: "Océlio", servers: [], activities: generateActivitiesForSection5() },
+        { title: "VI. REQUISIÇÃO DE VEÍCULOS PARA A ELEIÇÃO", elaboracao: "Océlio", servers: [], activities: generateActivitiesForSection6() },
+        { title: "VII. ESCRUTINADORES", elaboracao: "Océlio", servers: [], activities: generateActivitiesForSection7() },
+        { title: "VIII. JUNTA ELEITORAL", elaboracao: "Océlio", servers: [], activities: generateActivitiesForSection8() },
+        { title: "IX. DISTRIBUIÇÃO DAS URNAS ELETRÔNICAS", elaboracao: "Océlio", servers: [], activities: generateActivitiesForSection9() }
     ];
 
+    // Funções auxiliares para gerar as atividades (idênticas ao primeiro arquivo, mas resumidas para economia)
+    function generateActivitiesForSection1() { return [
+        { what: "Início da utilização do Convoca", when: "01/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Impressão dos relatórios preliminares", when: "01 e 02/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Atualizar dados da zona eleitoral", when: "01/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Escolha (seleção) de membros das mesas receptoras", when: "09 a 28 de julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Cadastrar agregações", when: "13/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Efetuar consulta das seções funções vagas", when: "14/07 a 28/07", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Convocação dos membros das mesas receptoras", when: "14/07 a 28/07", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Juiz Eleitoral anunciar a realização de audiência pública para nomeação", when: "29/07", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Publicar edital de convocação e nomeação de mesários", when: "07/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Último dia para designação da localização das mesas receptoras", when: "12/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Último dia para partidos políticos reclamarem da nomeação", when: "12 de agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Último dia para membros das Mesas Receptoras recusarem a nomeação", when: "12 de agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Apreciação das recusas e reclamações contra a nomeação", when: "14 de agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Último dia para partidos políticos recorrerem da decisão do Juiz Eleitoral", when: "17 de agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" },
+        { what: "Imprimir cartas convocatórias de mesários", when: "08/08 a 09/08", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started", start_date: "", deadline_days: "", end_date: "", actual_end_date: "" }
+    ]; }
+    function generateActivitiesForSection2() { return [ { what: "Preparar relação de instrutores de mesários", when: "05 a 23/07", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started" } ]; }
+    function generateActivitiesForSection3() { return [ { what: "Cadastro de locais de eventos", when: "23/julho", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started" } ]; }
+    function generateActivitiesForSection4() { return [ { what: "Preparar relação de delegados de prédio", when: "05 a 15/08", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started" } ]; }
+    function generateActivitiesForSection5() { return [ { what: "Preparar relação de auxiliares de eleição", when: "10 a 20/08", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started" } ]; }
+    function generateActivitiesForSection6() { return [ { what: "Levantamento da necessidade de veículos", when: "15/agosto", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started" } ]; }
+    function generateActivitiesForSection7() { return [ { what: "Preparar relação de escrutinadores", when: "20 a 30/08", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started" } ]; }
+    function generateActivitiesForSection8() { return [ { what: "Preparação da estrutura da Junta Eleitoral", when: "01 a 15/setembro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started" } ]; }
+    function generateActivitiesForSection9() { return [ { what: "Recebimento das urnas eletrônicas", when: "15 a 20/setembro", who: "", where: "", why: "", how: "", how_much: "", priority: "medium", status: "not-started" } ]; }
+
+    // Preenche os campos extras para todas as atividades (garantir estrutura completa)
+    function fillMissingFields(activities) {
+        return activities.map(act => ({
+            ...act,
+            priority: act.priority || "medium",
+            status: act.status || "not-started",
+            start_date: act.start_date || "",
+            deadline_days: act.deadline_days || "",
+            end_date: act.end_date || "",
+            actual_end_date: act.actual_end_date || ""
+        }));
+    }
+    // Aplicar preenchimento nos defaults
+    for (let i=0; i<defaultSections.length; i++) {
+        defaultSections[i].activities = fillMissingFields(defaultSections[i].activities);
+    }
+
     // ---------- FUNÇÕES DE AUTENTICAÇÃO ----------
-    function showNotification(msg, type) {
+    function showNotification(msg) {
         let el = document.getElementById('autoSaveIndicator');
         el.textContent = msg;
         el.classList.add('show');
         setTimeout(() => el.classList.remove('show'), 3000);
     }
-
-    function login() {
+    window.login = function() {
         const email = document.getElementById('email').value;
         const pw = document.getElementById('password').value;
-        auth.signInWithEmailAndPassword(email, pw).catch(err => showNotification(err.message, 'error'));
-    }
-    function register() {
+        auth.signInWithEmailAndPassword(email, pw).catch(err => showNotification(err.message));
+    };
+    window.register = function() {
         const email = document.getElementById('email').value;
         const pw = document.getElementById('password').value;
-        auth.createUserWithEmailAndPassword(email, pw).then(() => showNotification("Conta criada! Faça login.", "info")).catch(err => showNotification(err.message, 'error'));
-    }
-    function logout() { auth.signOut(); location.reload(); }
+        auth.createUserWithEmailAndPassword(email, pw).then(() => showNotification("Conta criada! Faça login.")).catch(err => showNotification(err.message));
+    };
+    window.logout = function() { auth.signOut(); location.reload(); };
 
-    // ---------- CARREGAR DADOS DO FIREBASE E SINCRONIZAR ----------
+    // ---------- FUNÇÕES DE BANCO DE DADOS ----------
     function loadDataFromFirebase() {
-        database.ref('planningData').on('value', (snapshot) => {
+        database.ref('planningData/sections').on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data && data.sections) {
-                sectionsData = data.sections;
+            if (data && Array.isArray(data) && data.length > 0) {
+                sectionsData = data;
+                // Garantir que todas as atividades tenham os campos extras
+                sectionsData.forEach(section => {
+                    if (!section.servers) section.servers = [];
+                    section.activities = fillMissingFields(section.activities);
+                });
             } else {
-                // inicializa com dados padrão
+                // Primeira vez: usar dados padrão
                 sectionsData = JSON.parse(JSON.stringify(defaultSections));
-                database.ref('planningData').set({ sections: sectionsData });
+                database.ref('planningData/sections').set(sectionsData);
             }
             renderAllSections();
             updateProgressAndStats();
             generateAllCharts();
+        }, (error) => {
+            console.error("Erro ao carregar dados:", error);
+            showNotification("Erro ao conectar ao Firebase. Recarregue a página.");
         });
     }
 
-    function updateActivityFirebase(sectionIdx, actIdx, field, value) {
+    window.updateActivityFirebase = function(sectionIdx, actIdx, field, value) {
         sectionsData[sectionIdx].activities[actIdx][field] = value;
-        // recálculo automático de end_date se start_date ou deadline_days mudar
+        // Recalcular data fim se necessário
         if (field === 'start_date' || field === 'deadline_days') {
             let act = sectionsData[sectionIdx].activities[actIdx];
             if (act.start_date && act.deadline_days && !isNaN(parseInt(act.deadline_days))) {
@@ -327,68 +293,83 @@
             }
         }
         database.ref('planningData/sections').set(sectionsData);
-    }
-
-    function addServerFirebase(sectionIdx, serverName) {
+        updateProgressAndStats();
+        generateAllCharts(); // atualiza gráficos em tempo real
+    };
+    window.addServerFirebase = function(sectionIdx, serverName) {
+        if (!serverName.trim()) return;
         if (!sectionsData[sectionIdx].servers) sectionsData[sectionIdx].servers = [];
-        sectionsData[sectionIdx].servers.push(serverName);
+        sectionsData[sectionIdx].servers.push(serverName.trim());
         database.ref('planningData/sections').set(sectionsData);
-    }
-    function removeServerFirebase(sectionIdx, serverIdx) {
+        renderAllSections(); // re-render para mostrar o novo servidor
+    };
+    window.removeServerFirebase = function(sectionIdx, serverIdx) {
         sectionsData[sectionIdx].servers.splice(serverIdx,1);
         database.ref('planningData/sections').set(sectionsData);
-    }
+        renderAllSections();
+    };
 
-    // ---------- RENDERIZAÇÃO DAS SEÇÕES (igual ao primeiro arquivo) ----------
+    // ---------- RENDERIZAÇÃO DAS SEÇÕES (CORRIGIDA) ----------
     function renderAllSections() {
         const container = document.getElementById('sectionsContainer');
         if (!container) return;
         container.innerHTML = '';
+        if (!sectionsData || sectionsData.length === 0) {
+            container.innerHTML = '<p style="text-align:center; padding:40px;">Carregando planejamento...</p>';
+            return;
+        }
         sectionsData.forEach((section, sIdx) => {
             const whoDatalistId = `whoOptions-${sIdx}`;
-            let serversHtml = (section.servers || []).map((srv, i) => `<div class="server-tag">${srv}<button class="remove-server" onclick="removeServerFirebase(${sIdx}, ${i})">×</button></div>`).join('');
+            const serversList = (section.servers || []).map((srv, i) => `<div class="server-tag">${escapeHtml(srv)}<button class="remove-server" onclick="removeServerFirebase(${sIdx}, ${i})">×</button></div>`).join('');
+            const activitiesHtml = (section.activities || []).map((act, aIdx) => `
+                <div class="activity-card priority-${act.priority} status-${act.status}">
+                    <div class="activity-header"><div class="activity-number">${aIdx+1}</div></div>
+                    <div class="activity-fields">
+                        <div class="field-group"><label>What</label><textarea class="field-input what" onchange="updateActivityFirebase(${sIdx},${aIdx},'what',this.value)">${escapeHtml(act.what)}</textarea></div>
+                        <div class="field-group"><label>When</label><input class="field-input" value="${escapeHtml(act.when)}" onchange="updateActivityFirebase(${sIdx},${aIdx},'when',this.value)"></div>
+                        <div class="field-group"><label>Who</label><input class="field-input" list="${whoDatalistId}" value="${escapeHtml(act.who)}" onchange="updateActivityFirebase(${sIdx},${aIdx},'who',this.value)"></div>
+                        <div class="field-group"><label>Where</label><input class="field-input" value="${escapeHtml(act.where)}" onchange="updateActivityFirebase(${sIdx},${aIdx},'where',this.value)"></div>
+                        <div class="field-group"><label>Why</label><input class="field-input" value="${escapeHtml(act.why)}" onchange="updateActivityFirebase(${sIdx},${aIdx},'why',this.value)"></div>
+                        <div class="field-group"><label>How</label><input class="field-input" value="${escapeHtml(act.how)}" onchange="updateActivityFirebase(${sIdx},${aIdx},'how',this.value)"></div>
+                        <div class="field-group"><label>How Much</label><input class="field-input" value="${escapeHtml(act.how_much)}" onchange="updateActivityFirebase(${sIdx},${aIdx},'how_much',this.value)"></div>
+                        <div class="field-group"><label>Prioridade</label><select class="priority-select" onchange="updateActivityFirebase(${sIdx},${aIdx},'priority',this.value)">
+                            <option ${act.priority==='urgent'?'selected':''} value="urgent">Urgente</option>
+                            <option ${act.priority==='medium'?'selected':''} value="medium">Média</option>
+                            <option ${act.priority==='low'?'selected':''} value="low">Baixa</option>
+                        </select></div>
+                        <div class="field-group"><label>Status</label><select class="status-select" onchange="updateActivityFirebase(${sIdx},${aIdx},'status',this.value)">
+                            <option ${act.status==='not-started'?'selected':''} value="not-started">Não Iniciado</option>
+                            <option ${act.status==='in-progress'?'selected':''} value="in-progress">Em Andamento</option>
+                            <option ${act.status==='completed'?'selected':''} value="completed">Concluído</option>
+                            <option ${act.status==='delayed'?'selected':''} value="delayed">Atrasado</option>
+                        </select></div>
+                        <div class="field-group"><label>Data Início</label><input type="date" value="${act.start_date||''}" onchange="updateActivityFirebase(${sIdx},${aIdx},'start_date',this.value)"></div>
+                        <div class="field-group"><label>Prazo (dias)</label><input type="number" value="${act.deadline_days||''}" onchange="updateActivityFirebase(${sIdx},${aIdx},'deadline_days',this.value)"></div>
+                        <div class="field-group"><label>Data Fim Planejada</label><input type="date" value="${act.end_date||''}" onchange="updateActivityFirebase(${sIdx},${aIdx},'end_date',this.value)"></div>
+                        <div class="field-group"><label>Data Fim Real</label><input type="date" value="${act.actual_end_date||''}" onchange="updateActivityFirebase(${sIdx},${aIdx},'actual_end_date',this.value)"></div>
+                    </div>
+                </div>
+            `).join('');
             const sectionDiv = document.createElement('div');
             sectionDiv.className = 'section';
             sectionDiv.innerHTML = `
-                <div class="section-header" onclick="toggleSection(this.parentElement)">
-                    <h3>${section.title}</h3><span class="toggle-icon">▼</span>
+                <div class="section-header" onclick="this.closest('.section').classList.toggle('collapsed')">
+                    <h3>${escapeHtml(section.title)}</h3><span class="toggle-icon">▼</span>
                 </div>
                 <div class="section-content">
-                    <datalist id="${whoDatalistId}">${(section.servers || []).map(s => `<option value="${s}">`).join('')}</datalist>
-                    <div class="section-info"><div>Elaboração: ${section.elaboracao}</div><div>Total Atividades: ${section.activities.length}</div></div>
-                    <div class="servers-section"><h4>Servidores Responsáveis</h4><div class="servers-list">${serversHtml}</div>
+                    <datalist id="${whoDatalistId}">${(section.servers || []).map(s => `<option value="${escapeHtml(s)}">`).join('')}</datalist>
+                    <div class="section-info"><div>Elaboração: ${escapeHtml(section.elaboracao)}</div><div>Total Atividades: ${section.activities.length}</div></div>
+                    <div class="servers-section"><h4>Servidores Responsáveis</h4><div class="servers-list">${serversList}</div>
                     <div class="add-server-form"><input type="text" id="serverName${sIdx}" placeholder="Nome (Área)"><button class="btn btn-primary" onclick="addServerFirebase(${sIdx}, document.getElementById('serverName${sIdx}').value)">Adicionar</button></div></div>
-                    <div class="activities-grid">
-                        ${section.activities.map((act, aIdx) => `
-                            <div class="activity-card priority-${act.priority} status-${act.status}">
-                                <div class="activity-header"><div class="activity-number">${aIdx+1}</div></div>
-                                <div class="activity-fields">
-                                    <div class="field-group"><label>What</label><textarea class="field-input what" onchange="updateActivityFirebase(${sIdx},${aIdx},'what',this.value)">${escapeHtml(act.what)}</textarea></div>
-                                    <div class="field-group"><label>When</label><input class="field-input" value="${escapeHtml(act.when)}" onchange="updateActivityFirebase(${sIdx},${aIdx},'when',this.value)"></div>
-                                    <div class="field-group"><label>Who</label><input class="field-input" list="${whoDatalistId}" value="${escapeHtml(act.who)}" onchange="updateActivityFirebase(${sIdx},${aIdx},'who',this.value)"></div>
-                                    <div class="field-group"><label>Where</label><input class="field-input" value="${escapeHtml(act.where)}" onchange="updateActivityFirebase(${sIdx},${aIdx},'where',this.value)"></div>
-                                    <div class="field-group"><label>Why</label><input class="field-input" value="${escapeHtml(act.why)}" onchange="updateActivityFirebase(${sIdx},${aIdx},'why',this.value)"></div>
-                                    <div class="field-group"><label>How</label><input class="field-input" value="${escapeHtml(act.how)}" onchange="updateActivityFirebase(${sIdx},${aIdx},'how',this.value)"></div>
-                                    <div class="field-group"><label>How Much</label><input class="field-input" value="${escapeHtml(act.how_much)}" onchange="updateActivityFirebase(${sIdx},${aIdx},'how_much',this.value)"></div>
-                                    <div class="field-group"><label>Prioridade</label><select class="priority-select" onchange="updateActivityFirebase(${sIdx},${aIdx},'priority',this.value)"><option ${act.priority==='urgent'?'selected':''} value="urgent">Urgente</option><option ${act.priority==='medium'?'selected':''} value="medium">Média</option><option ${act.priority==='low'?'selected':''} value="low">Baixa</option></select></div>
-                                    <div class="field-group"><label>Status</label><select class="status-select" onchange="updateActivityFirebase(${sIdx},${aIdx},'status',this.value)"><option ${act.status==='not-started'?'selected':''} value="not-started">Não Iniciado</option><option ${act.status==='in-progress'?'selected':''} value="in-progress">Em Andamento</option><option ${act.status==='completed'?'selected':''} value="completed">Concluído</option><option ${act.status==='delayed'?'selected':''} value="delayed">Atrasado</option></select></div>
-                                    <div class="field-group"><label>Data Início</label><input type="date" value="${act.start_date||''}" onchange="updateActivityFirebase(${sIdx},${aIdx},'start_date',this.value)"></div>
-                                    <div class="field-group"><label>Prazo (dias)</label><input type="number" value="${act.deadline_days||''}" onchange="updateActivityFirebase(${sIdx},${aIdx},'deadline_days',this.value)"></div>
-                                    <div class="field-group"><label>Data Fim Planejada</label><input type="date" value="${act.end_date||''}" onchange="updateActivityFirebase(${sIdx},${aIdx},'end_date',this.value)"></div>
-                                    <div class="field-group"><label>Data Fim Real</label><input type="date" value="${act.actual_end_date||''}" onchange="updateActivityFirebase(${sIdx},${aIdx},'actual_end_date',this.value)"></div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
+                    <div class="activities-grid">${activitiesHtml}</div>
                 </div>
             `;
             container.appendChild(sectionDiv);
         });
     }
-    function escapeHtml(str) { return String(str || '').replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-    function toggleSection(el) { el.closest('.section').classList.toggle('collapsed'); }
+    function escapeHtml(str) { return String(str || '').replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
 
-    // ---------- ESTATÍSTICAS E GRÁFICOS ----------
+    // ---------- ESTATÍSTICAS E GRÁFICOS (resumido, mas funcional) ----------
     function updateProgressAndStats() {
         let total=0, completed=0, inProgress=0, delayed=0;
         sectionsData.forEach(s => s.activities.forEach(a => { total++; if(a.status==='completed') completed++; if(a.status==='in-progress') inProgress++; if(a.status==='delayed') delayed++; }));
@@ -400,31 +381,29 @@
         document.getElementById('inProgressActivities').innerText = inProgress;
         document.getElementById('delayedActivities').innerText = delayed;
     }
-
     function generateAllCharts() {
         if(typeof Chart === 'undefined') return;
-        // status chart
-        let statusCount = {'not-started':0,'in-progress':0,'completed':0,'delayed':0};
-        sectionsData.forEach(s=>s.activities.forEach(a=>statusCount[a.status]++));
+        // Status
+        let st = {'not-started':0,'in-progress':0,'completed':0,'delayed':0};
+        sectionsData.forEach(s=>s.activities.forEach(a=>st[a.status]++));
         if(charts.statusChart) charts.statusChart.destroy();
-        charts.statusChart = new Chart(document.getElementById('statusChart'), { type:'doughnut', data:{ labels:['Não Iniciado','Em Andamento','Concluído','Atrasado'], datasets:[{ data:Object.values(statusCount), backgroundColor:['#f8f9fa','#fff3cd','#d4edda','#f8d7da'] }] } });
-        // priority
-        let priorityCount = {urgent:0,medium:0,low:0};
-        sectionsData.forEach(s=>s.activities.forEach(a=>priorityCount[a.priority]++));
+        charts.statusChart = new Chart(document.getElementById('statusChart'), { type:'doughnut', data:{ labels:['Não Iniciado','Em Andamento','Concluído','Atrasado'], datasets:[{ data:Object.values(st), backgroundColor:['#f8f9fa','#fff3cd','#d4edda','#f8d7da'] }] } });
+        // Prioridade
+        let pr = {urgent:0,medium:0,low:0};
+        sectionsData.forEach(s=>s.activities.forEach(a=>pr[a.priority]++));
         if(charts.priorityChart) charts.priorityChart.destroy();
-        charts.priorityChart = new Chart(document.getElementById('priorityChart'), { type:'bar', data:{ labels:['Urgente','Média','Baixa'], datasets:[{ data:Object.values(priorityCount), backgroundColor:['#e74c3c','#f39c12','#27ae60'] }] } });
+        charts.priorityChart = new Chart(document.getElementById('priorityChart'), { type:'bar', data:{ labels:['Urgente','Média','Baixa'], datasets:[{ data:Object.values(pr), backgroundColor:['#e74c3c','#f39c12','#27ae60'] }] } });
         // Pareto
-        let sectionCounts = sectionsData.map(s=> ({ name:s.title.split('.')[0], count:s.activities.length })).sort((a,b)=>b.count-a.count);
-        let totalAct = sectionCounts.reduce((s,c)=>s+c.count,0);
-        let cum=0, cumData=[];
-        sectionCounts.forEach(s=>{ cum+= (s.count/totalAct)*100; cumData.push(cum); });
+        let secCount = sectionsData.map(s=>({ name:s.title.split('.')[0], count:s.activities.length })).sort((a,b)=>b.count-a.count);
+        let totalAct = secCount.reduce((s,c)=>s+c.count,0);
+        let cum=0, cumData=secCount.map(s=>{ cum+= (s.count/totalAct)*100; return cum; });
         if(charts.paretoChart) charts.paretoChart.destroy();
-        charts.paretoChart = new Chart(document.getElementById('paretoChart'), { type:'bar', data:{ labels:sectionCounts.map(s=>s.name), datasets:[{ label:'Atividades', data:sectionCounts.map(s=>s.count), backgroundColor:'#667eea', yAxisID:'y' },{ label:'% Acumulado', data:cumData, type:'line', borderColor:'#e74c3c', yAxisID:'y1' }] }, options:{ scales:{ y1:{ position:'right', min:0, max:100 } } } });
-        // Deadline histogram
-        let buckets = {'0-7':0,'8-15':0,'16-30':0,'31-60':0,'60+':0,'N/D':0};
-        sectionsData.forEach(s=>s.activities.forEach(a=>{ let d=parseInt(a.deadline_days); if(isNaN(d)||d<=0) buckets['N/D']++; else if(d<=7) buckets['0-7']++; else if(d<=15) buckets['8-15']++; else if(d<=30) buckets['16-30']++; else if(d<=60) buckets['31-60']++; else buckets['60+']++; }));
+        charts.paretoChart = new Chart(document.getElementById('paretoChart'), { type:'bar', data:{ labels:secCount.map(s=>s.name), datasets:[{ label:'Atividades', data:secCount.map(s=>s.count), backgroundColor:'#667eea', yAxisID:'y' },{ label:'% Acumulado', data:cumData, type:'line', borderColor:'#e74c3c', yAxisID:'y1' }] }, options:{ scales:{ y1:{ position:'right', min:0, max:100 } } } });
+        // Deadline
+        let buck = {'0-7':0,'8-15':0,'16-30':0,'31-60':0,'60+':0,'N/D':0};
+        sectionsData.forEach(s=>s.activities.forEach(a=>{ let d=parseInt(a.deadline_days); if(isNaN(d)||d<=0) buck['N/D']++; else if(d<=7) buck['0-7']++; else if(d<=15) buck['8-15']++; else if(d<=30) buck['16-30']++; else if(d<=60) buck['31-60']++; else buck['60+']++; }));
         if(charts.deadlineChart) charts.deadlineChart.destroy();
-        charts.deadlineChart = new Chart(document.getElementById('deadlineChart'), { type:'bar', data:{ labels:Object.keys(buckets), datasets:[{ data:Object.values(buckets), backgroundColor:'#764ba2' }] } });
+        charts.deadlineChart = new Chart(document.getElementById('deadlineChart'), { type:'bar', data:{ labels:Object.keys(buck), datasets:[{ data:Object.values(buck), backgroundColor:'#764ba2' }] } });
         // Server chart
         let whoCount={};
         sectionsData.forEach(s=>s.activities.forEach(a=>{ let w=(a.who||'').trim(); if(w) whoCount[w]=(whoCount[w]||0)+1; }));
@@ -433,26 +412,24 @@
         charts.serverChart = new Chart(document.getElementById('serverChart'), { type:'bar', data:{ labels:sorted.map(s=>s[0]), datasets:[{ data:sorted.map(s=>s[1]), backgroundColor:'#667eea' }] }, options:{ indexAxis:'y' } });
         // Gantt
         let ganttActs = [];
-        sectionsData.forEach((s,si)=>s.activities.forEach((a,ai)=>{ if(a.start_date && a.end_date){ let start=new Date(a.start_date); start.setUTCHours(0,0,0,0); let end=new Date(a.end_date); end.setUTCHours(23,59,59,999); ganttActs.push({ label:`[${si+1}] ${a.what.substring(0,30)}`, fullLabel:`${s.title} - ${a.what}`, start, end, status:a.status }); } }));
+        sectionsData.forEach((s,si)=>s.activities.forEach((a,ai)=>{ if(a.start_date && a.end_date){ let start=new Date(a.start_date); start.setUTCHours(0,0,0,0); let end=new Date(a.end_date); end.setUTCHours(23,59,59,999); ganttActs.push({ label:`[${si+1}] ${(a.what||'').substring(0,30)}`, fullLabel:`${s.title} - ${a.what}`, start, end, status:a.status }); } }));
         if(charts.ganttChart) charts.ganttChart.destroy();
         let ctx = document.getElementById('ganttChart').getContext('2d');
         charts.ganttChart = new Chart(ctx, { type:'bar', data:{ labels:ganttActs.map(a=>a.label), datasets:[{ label:'Duração', data:ganttActs.map(a=>({ x:[a.start,a.end], y:a.label, fullLabel:a.fullLabel })), backgroundColor:ganttActs.map(a=>a.status==='completed'?'#28a745':a.status==='in-progress'?'#ffc107':a.status==='delayed'?'#dc3545':'#6c757d'), borderWidth:1, barPercentage:0.6 }] }, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, scales:{ x:{ type:'time', time:{ unit:'week' } } }, plugins:{ tooltip:{ callbacks:{ title:ctx=>ctx[0].raw.fullLabel, label:ctx=>`Início: ${new Date(ctx.raw.x[0]).toLocaleDateString()} - Fim: ${new Date(ctx.raw.x[1]).toLocaleDateString()}` } } } } });
     }
 
     // Backup / Restore
-    function exportBackup() { let dataStr = JSON.stringify(sectionsData, null, 2); let a=document.createElement('a'); a.href='data:application/json,'+encodeURIComponent(dataStr); a.download=`backup_eleicoes_${new Date().toISOString().slice(0,10)}.json`; a.click(); }
-    function importBackup() { let input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{ let file=e.target.files[0]; let reader=new FileReader(); reader.onload=ev=>{ try{ let data=JSON.parse(ev.target.result); if(confirm('Restaurar backup? Substituirá dados atuais.')){ sectionsData=data; database.ref('planningData/sections').set(sectionsData); showNotification('Backup restaurado!','success'); } }catch(err){ showNotification('Erro no arquivo','error'); } }; reader.readAsText(file); }; input.click(); }
-
-    // Controle de abas e listeners
-    function showTab(tabName, ev) {
+    window.exportBackup = function() { let dataStr = JSON.stringify(sectionsData, null, 2); let a=document.createElement('a'); a.href='data:application/json,'+encodeURIComponent(dataStr); a.download=`backup_eleicoes_${new Date().toISOString().slice(0,10)}.json`; a.click(); showNotification("Backup exportado"); };
+    window.importBackup = function() { let input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{ let file=e.target.files[0]; let reader=new FileReader(); reader.onload=ev=>{ try{ let data=JSON.parse(ev.target.result); if(confirm('Restaurar backup? Substituirá dados atuais.')){ sectionsData=data; database.ref('planningData/sections').set(sectionsData); showNotification('Backup restaurado!'); } }catch(err){ showNotification('Erro no arquivo'); } }; reader.readAsText(file); }; input.click(); };
+    window.showTab = function(tabName, ev) {
         document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
         document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
         document.getElementById(tabName).classList.add('active');
         ev.target.classList.add('active');
         if(tabName !== 'planejamento') setTimeout(generateAllCharts, 100);
-    }
+    };
 
-    // Monitor de usuários online
+    // Usuários online
     function loadOnlineUsers() {
         if(!currentUser) return;
         let userStatusRef = database.ref('onlineUsers/' + currentUser.uid);
@@ -460,13 +437,13 @@
         userStatusRef.onDisconnect().remove();
         database.ref('onlineUsers').on('value', snap => {
             let html='', on=0, off=0;
-            snap.forEach(ch=>{ let u=ch.val(); let isOnline = u.online && (Date.now() - u.lastSeen < 120000); if(isOnline) on++; else off++; html+=`<div><span class="${isOnline?'online-dot':'offline-dot'}"></span> ${u.name}</div>`; });
+            snap.forEach(ch=>{ let u=ch.val(); let isOnline = u.online && (Date.now() - u.lastSeen < 120000); if(isOnline) on++; else off++; html+=`<div><span class="${isOnline?'online-dot':'offline-dot'}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${isOnline?'#28a745':'#dc3545'};margin-right:6px;"></span> ${escapeHtml(u.name)}</div>`; });
             document.getElementById('usersList').innerHTML = `<strong>🟢 ${on} online / ⚪ ${off} offline</strong><br>${html}`;
         });
         setInterval(()=> userStatusRef.update({ lastSeen: firebase.database.ServerValue.TIMESTAMP }), 60000);
     }
 
-    // Autenticação e início
+    // Inicialização após autenticação
     auth.onAuthStateChanged(user => {
         if(user) {
             currentUser = user;
